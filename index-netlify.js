@@ -19,8 +19,16 @@ const clientId = process.env.CLIENT_ID; // Updated variable name for clarity
 const clientSecret = process.env.CLIENT_SECRET; // Updated variable name for clarity
 let lastLoggedIn;
 
-app.use(express.static(__dirname + '/pb')).use(cors()).use(cookieParser());
+app.use(express.static(__dirname + '/pb')).use(cors(corsOptions)).use(cookieParser());
 app.use(express.json());
+
+const corsOptions = {
+   origin: 'https://bpm-flash-4-spotify.netlify.app',
+   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+   credentials: true,
+   optionsSuccessStatus: 204,
+};
+
 
 const scope = 'user-read-private user-read-email user-read-currently-playing user-modify-playback-state user-read-playback-state ' +
   'playlist-read-private playlist-modify-private playlist-modify-public playlist-read-collaborative user-top-read user-library-read ' + 
