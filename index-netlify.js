@@ -813,3 +813,7 @@ app.get('/randomColors', (req, res) => {
 
     res.json({ randomColors });
 });
+
+// Export the express app with serverless handler
+module.exports = app;
+module.exports.handler = serverless(app);
