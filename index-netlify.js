@@ -23,6 +23,8 @@ let lastLoggedIn;
 app.use(express.static(__dirname + '/pb')).use(cors(corsOptions)).use(cookieParser());
 app.use(express.json());
 
+const router = express.Router();
+
 const corsOptions = {
    origin: 'https://bpm-flash-4-spotify.netlify.app',
    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -148,7 +150,7 @@ app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname, '/pb/index.html'));
 });
 
-app.get('/login', function(req, res) {
+router.get('/login', function(req, res) {
     const state = generateRandomString(16);
     const showDialog = true;
 
@@ -825,3 +827,5 @@ app.get('/randomColors', (req, res) => {
 // Export your app as a serverless function
 module.exports = app;
 module.exports.handler = serverless(app);
+// Use the router middleware for the routes
+app.use('/.netlify/functions/index-netlify', router);

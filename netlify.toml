@@ -1,5 +1,3 @@
-[build]
-functions = "index-netlify.js"
 
 # netlify.toml
 
