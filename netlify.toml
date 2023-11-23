@@ -2,8 +2,8 @@
   functions = "netlify/functions"
 
 [[redirects]]
-  from = "/.netlify/functions/*"
-  to = "/.netlify/functions/:splat"
+  from = "/*"
+  to = "/.netlify/functions/index-netlify"
   status = 200
   force = true
 
