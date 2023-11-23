@@ -823,3 +823,10 @@ module.exports = app;
 app.get('/api/hello', (req, res) => {
   res.json({ message: 'Hello from Netlify!' });
 });
+
+// Export the Netlify function
+exports.handler = async (event, context) => {
+  // Your Netlify function logic, use app as needed
+  const result = await app(event, context);
+  return result;
+};
