@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Secondary Page</title>
+    <style>
+        body {
+            transition: background-color 0s ease; /* Adjust the transition duration as needed */
+        }
+
+        /* Center the form on the page */
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            /* Center the form on the page */
+        }
+    </style>
+</head>
+
+<body>
+
+  <div class="overlay-container" id="overlay-container" style="display: none;">
+            <div class="overlay" id="playerData" style="
+    opacity: 0.74;
+">
+            <div id="song-info">
+                <!-- Display "Now Playing" indicator -->
+                <p id="now-playing" style="display: none;">• Now Playing</p>
+                <!-- Display the song title -->
+                <p id="song-details" style="display: none;">Song: <span id="song-title"></span></p>
+                <!-- Display the BPM -->
+                <p style="display: none;">BPM: <span id="bpm">0</span></p>
+            </div>
+            </div>
+  </div>
+    <!-- Form to input the code -->
+    <div style="
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.74;
+">
+        <form class="hide-ui" id="codeForm" style="
+    opacity: 0.74;
+">
+            <label class="hide-ui "for="codeInput">Enter the code:</label>
+            <input class="hide-ui" type="text" id="codeInput" value="" required style="
+    opacity: 0.80;
+">
+            <button class="hide-ui" id="hide-ui" type="submit" onclick="submitCode()">Submit</button>
+    
+        </form>
+      <button class="hide-ui" id="toggleButton" style="position: fixed;bottom: 20px;/* right: 20px; */padding: 10px;border-right: none;border-left: none;border-image: initial;border-radius: 20px;cursor: pointer;/* max-width: min-content; *//* min-width: min-content; */border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);z-index: 999; fill-opacity:0.58;opacity:0.85;" onclick="toggleFormVisibility()">Toggle code input</button>
+    </div>
+
+
+  <script>
+    // Function to toggle the visibility of form elements
+    let currentDisplay;
+    function toggleFormVisibility() {
+        const formElements = document.querySelectorAll('.hide-ui:not(#toggleButton):not(#song-link)');
+        const overlayContainer = document.getElementById('song-info');
+        const toggleButton = document.getElementById('toggleButton');
+
+        formElements.forEach(element => {
+            currentDisplay = element.style.display;
+            element.style.display = currentDisplay !== 'none' ? 'none' : 'flex';
+        });
+
+        if (currentDisplay !== 'none') {
+            // If elements are currently visible, move the overlay to the center
+            overlayContainer.style.alignItems = 'center';
+            overlayContainer.style.justifyContent = 'center';
+            toggleButton.textContent = 'Show code input';
+        } else {
+            // If elements are currently hidden, move the overlay to the top
+            overlayContainer.style.alignItems = 'flex-start';
+            overlayContainer.style.justifyContent = 'flex-start';
+            toggleButton.textContent = 'Hide code input';
+        }
+    }
+
+
+    
+      function updateBackgroundColor(color, transition) {
+    console.log('Received color:', color);
+    console.log('Received transition:', transition);
+    document.body.style.backgroundColor = color;
+        if(`background-color ${transition}s ease`!= document.body.style.transition){
+    document.body.style.transition = `background-color ${transition}s ease` || 'background-color 0s ease';
+        }
+}
+
+      // Declare eventSource variable outside of the function for global access
+      let eventSource;
+
+      // Function to initiate SSE connection with a valid code
+      function initiateSSE(code) {
+          // Close existing SSE connection if any
+          if (eventSource) {
+              eventSource.close();
+          }
+
+          // Server-Sent Events (SSE) to receive color updates
+          eventSource = new EventSource(`/subscribe?code=${encodeURIComponent(code)}`);
+
+          eventSource.onmessage = (event) => {
+              const data = JSON.parse(event.data);
+              const { color,transition } = data;
+              updateBackgroundColor(color,transition);
+          };
+      }
+
+      // Function to submit the entered code
+      function submitCode(eventSource) {
+          event.preventDefault();  // Prevent the default form submission behavior
+
+          const codeInput = document.getElementById('codeInput').value;
+          subCode = codeInput;
+      window.history.replaceState({}, document.title, `/subscribe.html?code=${subCode?subCode:''}`);
+      document.getElementById('codeInput').value = `${subCode?subCode:''}`;
+          // Check if the code is valid before initiating SSE connection
+          if (codeInput) {
+              initiateSSE(codeInput);
+          }
+      }
+
+    let subCode;
+    // Function to initiate SSE connection with a valid code
+    function initiateSSEFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        subCode=code;
+
+        // Check if there's a code in the URL parameters
+        if (code) {
+            // Close existing SSE connection if any
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            // Server-Sent Events (SSE) to receive color updates
+            eventSource = new EventSource(`/subscribe?code=${encodeURIComponent(code)}`);
+
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const { color, transition } = data;
+                updateBackgroundColor(color, transition);
+            };
+        }
+      // Clear the URL to remove sensitive information
+      
+      window.history.replaceState({}, document.title, `/subscribe.html?code=${subCode?subCode:''}`);
+      document.getElementById('codeInput').value = `${subCode?subCode:''}`;
+    }
+
+    // Call the function when the page loads
+    initiateSSEFromURL();
+
+
+    // Function to fetch and display overlay data at intervals
+    function fetchAndDisplayOverlayData(code) {
+        setInterval(() => {
+          code=subCode;
+          if(subCode){
+            fetch(`/getoverlaydata?code=${encodeURIComponent(code)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const { overlayHTML } = data;
+                  if(overlayHTML){
+                    updateOverlay(overlayHTML);
+                  }
+                })
+                .catch(error => console.error('Error fetching overlay data:', error));
+        }
+        }, 7000); // Interval set to 5 seconds (5000 milliseconds)
+    }
+
+    fetchAndDisplayOverlayData(subCode);
+
+
+    async function updateOverlay(overlayHTML) {
+        // Assuming you have an element with class "overlay-container" to contain the overlay
+        const overlayContainer = document.getElementById('song-info');
+        const container = document.getElementById('overlay-container');
+    
+        // Set the innerHTML of the overlay container with the received overlay data
+      
+        overlayContainer.innerHTML = subCode?(!overlayHTML.toString().startsWith("[")?overlayHTML:overlayContainer.innerHTML):'';
+        container.style.display = subCode?'flex':'none';
+      
+    }
+
+  </script>
+
+  
+</body>
+
+</html>

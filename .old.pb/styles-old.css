@@ -1,0 +1,62 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #333;
+    color: white;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    align-items: center;
+    height: 100vh;
+}
+
+.overlay-container {
+    opacity: 0.5;
+    flex-grow: 1; /* Allow the overlay to grow and take available space */
+}
+
+.overlay {
+    text-align: center;
+    background-color: #333;
+    padding: 5px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    margin-bottom: 20vh; /* Space between overlay and controls */
+    margin-top: 5.5vh;
+}
+
+.controls-container {
+    display: flex;
+    flex-direction: column; /* Stack controls vertically */
+    align-items: center;
+}
+
+.controls {
+    text-align: center;
+    opacity: 0.5; /* Set opacity to 50% for controls */
+}
+
+/* Style the buttons with transparency */
+button {
+    opacity: 0.5; /* Set opacity to 50% for buttons */
+    margin: 5px; /* Add some margin to space the buttons */
+}
+
+.tempo-controls {
+    display: flex;
+    justify-content: space-between; /* Space evenly between tempo controls */
+    width: 100%;
+}
+
+.cust-bpm-container{
+    width: 100%;
+}
+
+.cust-url-container{
+    width: 100%;
+}
+
+p{
+  padding:3px;
+  margin: 5px;
+}

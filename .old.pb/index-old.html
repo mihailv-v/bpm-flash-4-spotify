@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPM Flash Overlay</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="overlay-container">
+        <!-- Content to display BPM and song information -->
+        <div class="overlay">
+            <div id="song-info">
+                <p>Song: <span id="song-title">N/A</span></p>
+                <p>BPM: <span id="bpm">0</span></p>
+            </div>
+        </div>
+    </div>
+    <div class="controls-container">
+        <div class="controls">
+          <!-- Add this button in your HTML -->
+          <button id="login-button">Login with Spotify</button>    
+
+            <!-- Add an id to the custom colors input field -->
+          <div>
+            <input type="text" id="custom-colors" placeholder="Custom Colors (comma-separated)">
+              <div>
+                <button id="set-colors-button">Set Colors</button>
+                <button id="default-colors-button">Default Colors</button>
+              </div>
+          </div>
+            <div class="cust-bpm-container">
+                <input type="number" id="custom-bpm-input" placeholder="Enter custom BPM">
+                <button id="set-custom-bpm">Set BPM</button>
+            </div>
+            <!-- Add a custom track URL input field and a "Get BPM" button -->
+            <div class="cust-url-container">
+                <input type="text" id="custom-track-url" placeholder="Custom Track URL">
+                <button id="get-bpm-button">Get BPM</button>
+            </div>
+        </div>
+
+        <div class="tempo-controls">
+            <button id="stop-button">Stop</button>
+            <button id="half-button">0.5x</button>
+            <button id="double-button">2x</button>
+            <button id="quadruple-button">4x</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
