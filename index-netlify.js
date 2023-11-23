@@ -20,17 +20,8 @@ const clientId = process.env.CLIENT_ID; // Updated variable name for clarity
 const clientSecret = process.env.CLIENT_SECRET; // Updated variable name for clarity
 let lastLoggedIn;
 
-app.use(express.static(__dirname + '/pb')).use(cors(corsOptions)).use(cookieParser());
+app.use(express.static(__dirname + '/pb')).use(cors()).use(cookieParser());
 app.use(express.json());
-
-const router = express.Router();
-
-const corsOptions = {
-   origin: 'https://bpm-flash-4-spotify.netlify.app',
-   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-   credentials: true,
-   optionsSuccessStatus: 204,
-};
 
 
 const scope = 'user-read-private user-read-email user-read-currently-playing user-modify-playback-state user-read-playback-state ' +
@@ -150,7 +141,7 @@ app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname, '/pb/index.html'));
 });
 
-router.get('/login', function(req, res) {
+app.get('/login', function(req, res) {
     const state = generateRandomString(16);
     const showDialog = true;
 
@@ -821,21 +812,4 @@ app.get('/randomColors', (req, res) => {
     const randomColors = generateUniqueRandomColors(numColors);
 
     res.json({ randomColors });
-});
-
-
-// Export your app as a serverless function
-module.exports = app;
-module.exports.handler = serverless(app);
-// Use the router middleware for the routes
-app.use('/.netlify/functions/index-netlify', router);
-
-// Define your Express routes using the router
-router.get('/hello', (req, res) => {
-  res.json({ message: 'Hello World!' });
-});
-
-router.get('/user/:id', (req, res) => {
-  const userId = req.params.id;
-  res.json({ message: `User ID: ${userId}` });
 });
