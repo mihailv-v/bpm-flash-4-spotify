@@ -1,21 +1,7 @@
+[build]
+  functions = "netlify/functions"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = true
-
-[build]
-  functions = "functions"
-
-[[plugins]]
-  package = "./netlify-plugin-mix"
-
-[dev]
-  functions = "functions"
-
-[dev.proxy]
-  command = "yarn start"
-  port = 3000
-  functionsPort = 34567
-
-

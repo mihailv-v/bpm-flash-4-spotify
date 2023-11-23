@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js & sleep 5 && npm run build",
-    "start-netlify": "node index-netlify.js & sleep 5 && npm run build",
+    "start-netlify": "node /netlify/functions/index-netlify.js & sleep 5 && npm run build",
     "build": "echo 'Dummy build command'"
   },
   "keywords": [],
