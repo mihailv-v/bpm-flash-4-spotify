@@ -829,3 +829,13 @@ module.exports = app;
 module.exports.handler = serverless(app);
 // Use the router middleware for the routes
 app.use('/.netlify/functions/index-netlify', router);
+
+// Define your Express routes using the router
+router.get('/hello', (req, res) => {
+  res.json({ message: 'Hello World!' });
+});
+
+router.get('/user/:id', (req, res) => {
+  const userId = req.params.id;
+  res.json({ message: `User ID: ${userId}` });
+});
