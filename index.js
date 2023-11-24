@@ -33,6 +33,25 @@ const clientId = process.env.CLIENT_ID; // Updated variable name for clarity
 const clientSecret = process.env.CLIENT_SECRET; // Updated variable name for clarity
 let lastLoggedIn;
 
+// Set the CORS options based on the environment
+let corsOptions;
+if (isReplit) {
+    corsOptions = {
+        origin: replitBaseUrl,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        credentials: true,
+        optionsSuccessStatus: 204,
+    };
+} else {
+    corsOptions = {
+        origin: netlifyBaseUrl,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        credentials: true,
+        optionsSuccessStatus: 204,
+    };
+}
+
+app.use(cors(corsOptions));
 app.use(express.static(__dirname + '/pb')).use(cors()).use(cookieParser());
 app.use(express.json());
 
