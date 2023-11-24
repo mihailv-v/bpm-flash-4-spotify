@@ -4,7 +4,6 @@
 #   status = 200
 [build]
   functions = "/"
-  command = "npm install"  # or your build command
 
 [[plugins]]
 package = "@netlify/plugin-functions-install-core"
