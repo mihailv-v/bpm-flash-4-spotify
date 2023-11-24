@@ -862,3 +862,4 @@ app.get('/test-redirect', function(req, res) {
   res.redirect('https://www.example.com'); // Change the URL to a test destination
 });
 
+module.exports = app;
