@@ -164,7 +164,7 @@ app.get('/login', function(req, res) {
             scope: scope,
             redirect_uri: redirectUri,
             state: state,
-            show_dialog: false
+            show_dialog: isReplit?false:true
         }));
     console.log('Redirecting to Spotify login');
   lastLoggedIn= Date.now()/1000;
