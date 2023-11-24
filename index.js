@@ -812,5 +812,12 @@ app.get('/randomColors', (req, res) => {
     res.json({ randomColors });
 });
 
+// module.exports.handler = serverless(app);
 
+// module.exports = app;
+
+// // Example endpoint
+// app.get('/api/hello', (req, res) => {
+//   res.json({ message: 'Hello from Netlify!' });
+// });
 
