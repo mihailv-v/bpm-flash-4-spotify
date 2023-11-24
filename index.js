@@ -865,3 +865,66 @@ app.get('/test-redirect', function(req, res) {
   res.redirect('https://www.example.com'); // Change the URL to a test destination
 });
 
+
+exports.handler = async (event) => {
+    const { customFlashingColors, saturationChange, vibranceChange, brightnessChange } = JSON.parse(event.body);
+
+    if (event.path === '/adjustColors' && event.httpMethod === 'POST') {
+        // Check if customFlashingColors is an array
+        if (Array.isArray(customFlashingColors)) {
+            const newColors = customFlashingColors.map(color => {
+                let tc = tinycolor(color);
+                let currentVibrance = tc.toHsv().v;
+
+                console.log(`Original Color: ${color}`);
+                console.log(`Current Vibrance: ${currentVibrance}`);
+
+                // Adjust vibrance in the HSV color space
+                if (vibranceChange !== 0) {
+                    let newVibrance = Math.max(0, Math.min(1, currentVibrance + vibranceChange / 100));
+                    tc = tinycolor({ h: tc.toHsv().h, s: tc.toHsv().s, v: newVibrance });
+                    console.log(`New Vibrance: ${newVibrance}`);
+                }
+
+                // Convert to HSL for saturation and brightness adjustments
+                let currentHsl = tc.toHsl();
+
+                // Adjust saturation in the HSL color space
+                if (saturationChange !== 0) {
+                    let newSaturation = Math.max(0, Math.min(1, currentHsl.s + saturationChange / 100));
+                    currentHsl.s = newSaturation;
+                    console.log(`New Saturation: ${newSaturation}`);
+                }
+
+                // Adjust brightness in the HSL color space
+                if (brightnessChange !== 0) {
+                    let newBrightness = Math.max(0, Math.min(1, currentHsl.l + brightnessChange / 100));
+                    currentHsl.l = newBrightness;
+                    console.log(`New Brightness: ${newBrightness}`);
+                }
+
+                // Convert back to HEX color space
+                tc = tinycolor(currentHsl);
+                console.log(`New Color (HEX): ${tc.toHexString()}\n`);
+
+                return tc.toHexString();
+            });
+
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ newColors, newVibrance: vibranceChange, newBrightness: brightnessChange }),
+            };
+        } else {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Invalid data format for colors' }),
+            };
+        }
+    }
+
+    // Handle other routes or methods if needed
+    return {
+        statusCode: 404,
+        body: JSON.stringify({ error: 'Not Found' }),
+    };
+};
