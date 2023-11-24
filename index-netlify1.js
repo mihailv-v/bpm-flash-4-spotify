@@ -815,7 +815,7 @@ app.get('/randomColors', (req, res) => {
 
 // // Export the express app with serverless handler
 // module.exports = app;
-// module.exports.handler = serverless(app);
+module.exports.handler = serverless(app);
 
 module.exports = app;
 
@@ -824,9 +824,9 @@ app.get('/api/hello', (req, res) => {
   res.json({ message: 'Hello from Netlify!' });
 });
 
-// Export the Netlify function
-exports.handler = async (event, context) => {
-  // Your Netlify function logic, use app as needed
-  const result = await app(event, context);
-  return result;
-};
+// // Export the Netlify function
+// exports.handler = async (event, context) => {
+//   // Your Netlify function logic, use app as needed
+//   const result = await app(event, context);
+//   return result;
+// };
