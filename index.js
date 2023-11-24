@@ -14,7 +14,21 @@ const tinycolor = require('tinycolor2');
 
 const app = express();
 const port = process.env.PORT || 8888;
-const redirectUri = 'https://bpm-flash-4-spotify.mv47.repl.co/callback'; // Update this with your actual redirect URI
+// Check if the code is running in a Repl.it environment
+const isReplit = process.env.REPLIT_ENV === 'true';
+
+// Define the base URL for Netlify deployment
+const netlifyBaseUrl = 'https://bpm-flash-4-spotify.netlify.app';
+
+// Define the base URL for Repl.it deployment
+const replitBaseUrl = 'https://bpm-flash-4-spotify.mv47.repl.co';
+
+// Set the redirect URI based on the environment
+const redirectUri = isReplit ? `${replitBaseUrl}/callback` : `${netlifyBaseUrl}/callback`;
+
+// Now you can use the dynamic redirectUri in your code
+console.log('Redirect URI:', redirectUri);
+
 const clientId = process.env.CLIENT_ID; // Updated variable name for clarity
 const clientSecret = process.env.CLIENT_SECRET; // Updated variable name for clarity
 let lastLoggedIn;
