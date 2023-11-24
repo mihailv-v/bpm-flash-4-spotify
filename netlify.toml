@@ -3,7 +3,9 @@
 #   to = "/index.html"
 #   status = 200
 [build]
-  functions = ["functions", "/"]
+  [functions]
+    directory = "functions"
+    directory = "/"
 
 [[plugins]]
 package = "@netlify/plugin-functions-install-core"
