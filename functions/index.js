@@ -1,3 +1,6 @@
+
+exports.handler = async (event, context) => {
+
 const isReplit = process.env.REPLIT_ENV === 'true';
 
 const express = require('express');
@@ -865,3 +868,4 @@ app.get('/test-redirect', function(req, res) {
   res.redirect('https://www.example.com'); // Change the URL to a test destination
 });
 
+}
