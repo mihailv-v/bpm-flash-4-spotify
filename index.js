@@ -1,9 +1,11 @@
+const isReplit = process.env.REPLIT_ENV === 'true';
+
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const SpotifyWebApi = require('spotify-web-api-node');
-const fetch = require("@replit/node-fetch"); // Import the 'node-fetch' library
+const fetch = isReplit ? require('@replit/node-fetch') : require('node-fetch');
 const querystring = require('querystring'); // Import the 'querystring' library
 const extractColors = require('extract-colors'); // Import the 'extract-colors' library
 const Vibrant = require('node-vibrant');
@@ -15,7 +17,7 @@ const tinycolor = require('tinycolor2');
 const app = express();
 const port = process.env.PORT || 8888;
 // Check if the code is running in a Repl.it environment
-const isReplit = process.env.REPLIT_ENV === 'true';
+
 
 // Define the base URL for Netlify deployment
 const netlifyBaseUrl = 'https://bpm-flash-4-spotify.netlify.app';
@@ -862,4 +864,3 @@ app.get('/test-redirect', function(req, res) {
   res.redirect('https://www.example.com'); // Change the URL to a test destination
 });
 
-module.exports = app;
