@@ -13,6 +13,7 @@ const sharp = require('sharp'); // Import the sharp library
 const axios = require('axios');
 const cheerio = require('cheerio'); // Include cheerio
 const tinycolor = require('tinycolor2');
+const serverless = require('serverless-http');
 
 const app = express();
 const port = process.env.PORT || 8888;
