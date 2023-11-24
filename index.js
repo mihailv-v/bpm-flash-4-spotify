@@ -176,18 +176,22 @@ app.get('/login', function(req, res) {
     const state = generateRandomString(16);
     const showDialog = true;
 
-    res.redirect('https://accounts.spotify.com/authorize?' +
+    const spotifyAuthUrl = 'https://accounts.spotify.com/authorize?' +
         querystring.stringify({
             response_type: 'code',
             client_id: clientId,
             scope: scope,
             redirect_uri: redirectUri,
             state: state,
-            show_dialog: isReplit?false:true
-        }));
-    console.log('Redirecting to Spotify login');
-  lastLoggedIn= Date.now()/1000;
+            show_dialog: isReplit ? false : true
+        });
+
+    console.log('Redirecting to Spotify login:', spotifyAuthUrl);
+
+    res.redirect(spotifyAuthUrl);
+    lastLoggedIn = Date.now() / 1000;
 });
+
 
 app.get('/logout', function(req, res) {
   res.clearCookie('access_token');
