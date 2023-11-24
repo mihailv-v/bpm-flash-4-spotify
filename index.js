@@ -857,4 +857,8 @@ app.get('/randomColors', (req, res) => {
 // app.get('/api/hello', (req, res) => {
 //   res.json({ message: 'Hello from Netlify!' });
 // });
+// Add this route after your other routes
+app.get('/test-redirect', function(req, res) {
+  res.redirect('https://www.example.com'); // Change the URL to a test destination
+});
 
