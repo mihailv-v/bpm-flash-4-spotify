@@ -63,14 +63,15 @@
         <button class="hide-ui" id="goToMirror">Go To Mirror Page</button>
       </div>
 
-<button class="hide-ui" id="lazyReloadButton">Reload</button>
+<button class="hide-ui" id="lazyReloadButton" style="margin: 10px 0;padding: 10px 0;">Reload</button>
 
       <div>
         <button class="hide-ui" id="fullscreenButton" style="border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);background-color: rgba(64,64,64,0);" >Fullscreen for PIP</button>
         <button class="hide-ui" id="fullscreenButtonNormal" style="border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);background-color: rgba(64,64,64,0);" >Fullscreen</button>
         
       </div>
-      
+      <button class="hide-ui" id="emergencyButton" style="border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);background-color: rgba(64,64,64,0);" >Stop Hidden Video (PIP)</button>
+
       <button class="hide-ui" id="playlist-button" onclick="redirectToPlaylistPage()">Playlist Tools</button>
     </div>
     <!-- Controls Container -->
@@ -491,7 +492,37 @@ setInterval(simulateUserActivity, 150000); // 5 minutes
        }
      }
 
+  const emergencyButton = document.getElementById('emergencyButton');
 
+  // Function to update the button text based on the video state
+  function updateButtonText() {
+    if (mobileContent.paused) {
+      emergencyButton.textContent = 'Start Hidden Video (PIP)';
+    } else {
+      emergencyButton.textContent = 'Stop Hidden Video (PIP)';
+    }
+  }
+
+  // Add event listener to the emergency button
+  emergencyButton.addEventListener('click', function () {
+    if (mobileContent.paused) {
+      // If the video is paused, play it
+      mobileContent.play();
+    } else {
+      // If the video is playing, pause it
+      mobileContent.pause();
+    }
+
+    // Update the button text after the click event
+    updateButtonText();
+  });
+
+  // Update the button text when the video state changes
+  mobileContent.addEventListener('play', updateButtonText);
+  mobileContent.addEventListener('pause', updateButtonText);
+
+
+     
 
          const reloadButton = document.getElementById('lazyReloadButton');
      reloadButton.addEventListener('click', () => {

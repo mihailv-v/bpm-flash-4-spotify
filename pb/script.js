@@ -1573,7 +1573,7 @@ submitButton.onclick = function() {
           forSpaceContainer.style.paddingBottom = "0"; // Reset padding
       } else {
           controlsContainer.classList.add("hidden-controls");
-          overlayContainer.style.marginTop = "30vh"; // Move overlay to the middle
+          overlayContainer.style.marginTop = "25.65vh"; // Move overlay to the middle
           forSpaceContainer.style.position = "relative";
           forSpaceContainer.style.paddingBottom = "57%"; // No padding when controls are hidden
       }

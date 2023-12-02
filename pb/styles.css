@@ -575,3 +575,13 @@ input#transition-slider{
       text-align: center;
 }
 
+.hidden-controls,body,.overlay-controls,.hide-ui {
+    transition: margin 0.7s ease, padding 0.7s ease;
+}
+
+.for-space {
+    transition: 0.7s ease;
+}
+* {
+    transition: all 0.7s ease; /* Adjust the duration and easing function as needed */
+}
