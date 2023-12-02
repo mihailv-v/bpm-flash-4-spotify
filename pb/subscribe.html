@@ -23,7 +23,7 @@
     </style>
 </head>
 
-<body>
+<body id="1b" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
 
   <div class="overlay-container" id="overlay-container" style="display: none;">
             <div class="overlay" id="playerData" style="
@@ -60,15 +60,111 @@
             <button class="hide-ui" id="hide-ui" type="submit" onclick="submitCode()">Submit</button>
     
         </form>
-      <button class="hide-ui" id="toggleButton" style="position: fixed;bottom: 20px;/* right: 20px; */padding: 10px;border-right: none;border-left: none;border-image: initial;border-radius: 20px;cursor: pointer;/* max-width: min-content; *//* min-width: min-content; */border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);z-index: 999; fill-opacity:0.58;opacity:0.85;" onclick="toggleFormVisibility()">Toggle code input</button>
+        <div id="mobile_content_holder" style="opacity:0.5;border-radius:50px;z-index: -999;"frameborder="50%"  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
+          
+            <iframe id="mobile_content_frame" width="10vh" height="10vh" style="opacity:0.05; border-radius:50px; z-index: -999;" frameborder="100%" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+        </div>
+
+          
+        <button class="hide-ui" id="toggleButton" style="position: fixed;bottom: 25px;padding: 10px;border-right: none;border-left: none;border-image: initial;border-radius: 20px;cursor: pointer;border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);z-index: 999; fill-opacity:0.58;opacity:0.85;z-index: 999;" onclick="toggleFormVisibility()">Toggle code input</button>
+
+      <div style="left:50%;position: fixed;">
+        <button class="hide-ui" id="fullscreenButton" style="position: fixed;bottom: 75px;padding: 10px;border-right: none;border-left: none;border-image: initial;border-radius: 20px;cursor: pointer;border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);z-index: 999; fill-opacity:0.58;opacity:0.85;right:48.5%;z-index: 999; background-color: rgba(64,64,64,0); color: rgba(255,239,213,0.66);" >Fullscreen for PIP</button>
+      <button class="hide-ui" id="fullscreenButtonNormal" style="position: fixed;bottom: 75px;padding: 10px;border-right: none;border-left: none;border-image: initial;border-radius: 20px;cursor: pointer;border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);z-index: 999; fill-opacity:0.58;opacity:0.85;left:52.25%;z-index: 999; background-color: rgba(64,64,64,0); color: rgba(255,239,213,0.66);" >Fullscreen</button>
+      </div>
+      
     </div>
 
 
   <script>
+    const video = document.getElementById('1b');
+    const iframe = document.getElementById('mobile_content_frame');
+    const iframeDocument = iframe.contentDocument;
+
+    // Set the inner HTML of the iframe
+    iframeDocument.body.innerHTML =
+      `<style>
+      
+    video::-webkit-media-controls-timeline,
+    video::-webkit-media-controls-volume-slider,
+    video::-webkit-media-controls-mute-button,
+    video::-webkit-media-controls-toggle-closed-captions-button,
+    video::-webkit-media-controls-overflow-button,
+    video::-webkit-media-controls-current-time-display,
+    video::-webkit-media-controls-time-remaining-display {
+      filter: grayscale(100%);
+      opacity: 0.05;
+      pointer-events: none;
+    }
+
+
+    /* Show fullscreen button */
+    video::-webkit-media-controls-fullscreen-button {
+      filter: grayscale(0%);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    video::-webkit-media-controls-play-button {
+      filter: grayscale(100%);
+      opacity: 0.05;
+      pointer-events: none;
+      display: none;
+    }
+      </style>
+      <video id="mobile_content" width="100%" height="100%" src="lbt.webm" style="border-radius:50px;" autoplay muted controls loop></video>`;
+    const mobileContent = iframeDocument.getElementById('mobile_content');
+
+    const mobileContentHolder = document.getElementById('mobile_content_holder');
+    const fullscreenButton = document.getElementById('fullscreenButton');
+
+
+fullscreenButton.addEventListener("click", function () {
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    makeFullscreen(mobileContent);
+  }
+});
+    document.getElementById('fullscreenButtonNormal').addEventListener("click", function () {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        makeFullscreen(video);
+      }
+    });
+
+function makeFullscreen(element) {
+  if (element.requestFullscreen) {
+    element.requestFullscreen();
+  } else if (element.webkitRequestFullscreen) {
+    element.webkitRequestFullscreen();
+  } else if (element.mozRequestFullScreen) {
+    element.mozRequestFullScreen();
+  } else if (element.msRequestFullscreen) {
+    element.msRequestFullscreen();
+  } else {
+    var requestFullscreen =
+      document.documentElement.requestFullscreen ||
+      document.documentElement.webkitRequestFullscreen ||
+      document.documentElement.mozRequestFullscreen ||
+      document.documentElement.requestFullScreen ||
+      document.documentElement.webkitRequestFullScreen ||
+      document.documentElement.mozRequestFullScreen;
+
+    if (requestFullscreen) {
+      requestFullscreen.call(document.documentElement);
+    } else {
+      console.log("Fullscreen not supported");
+    }
+  }
+}
+
+
     // Function to toggle the visibility of form elements
     let currentDisplay;
     function toggleFormVisibility() {
-        const formElements = document.querySelectorAll('.hide-ui:not(#toggleButton):not(#song-link)');
+        const formElements = document.querySelectorAll('.hide-ui:not(#toggleButton):not(#song-link):not(#fullscreenButton):not(#fullscreenButtonNormal)');
         const overlayContainer = document.getElementById('song-info');
         const toggleButton = document.getElementById('toggleButton');
 

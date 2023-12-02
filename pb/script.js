@@ -1559,18 +1559,24 @@ submitButton.onclick = function() {
 
 
 
-     const hideUI = document.getElementById("hide-ui");
+    const hideUI = document.getElementById("hide-ui");
     const controlsContainer = document.querySelector(".controls-container");
     const overlayContainer = document.querySelector(".overlay-container");
+    const forSpaceContainer = document.querySelector(".for-space");
+
 
     hideUI.addEventListener("click", function () {
-        if (controlsContainer.classList.contains("hidden-controls")) {
-            controlsContainer.classList.remove("hidden-controls");
-            overlayContainer.style.marginTop = "5.5vh"; // Reset the margin
-        } else {
-            controlsContainer.classList.add("hidden-controls");
-            overlayContainer.style.marginTop = "30vh"; // Move overlay to the middle
-        }
+      if (controlsContainer.classList.contains("hidden-controls")) {
+          controlsContainer.classList.remove("hidden-controls");
+          overlayContainer.style.marginTop = "5.5vh"; // Reset the margin
+          forSpaceContainer.style.position = "relative";
+          forSpaceContainer.style.paddingBottom = "0"; // Reset padding
+      } else {
+          controlsContainer.classList.add("hidden-controls");
+          overlayContainer.style.marginTop = "30vh"; // Move overlay to the middle
+          forSpaceContainer.style.position = "relative";
+          forSpaceContainer.style.paddingBottom = "57%"; // No padding when controls are hidden
+      }
     });
 
 

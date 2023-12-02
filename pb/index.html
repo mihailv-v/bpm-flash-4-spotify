@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdn.socket.io/4.1.2/socket.io.min.js"></script>
 </head>
-<body>
+<body id="1b">
     <!-- Overlay Container -->
     <div class="overlay-container" style="
           opacity: 0.74;
@@ -62,7 +62,16 @@
           "></span>
         <button class="hide-ui" id="goToMirror">Go To Mirror Page</button>
       </div>
-        <button class="hide-ui" id="playlist-button" onclick="redirectToPlaylistPage()">Playlist Tools</button>
+
+<button class="hide-ui" id="lazyReloadButton">Reload</button>
+
+      <div>
+        <button class="hide-ui" id="fullscreenButton" style="border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);background-color: rgba(64,64,64,0);" >Fullscreen for PIP</button>
+        <button class="hide-ui" id="fullscreenButtonNormal" style="border-bottom: thick inset rgba(50, 205, 50, 0.33);border-top: double rgba(0, 255, 0, 0.33);background-color: rgba(64,64,64,0);" >Fullscreen</button>
+        
+      </div>
+      
+      <button class="hide-ui" id="playlist-button" onclick="redirectToPlaylistPage()">Playlist Tools</button>
     </div>
     <!-- Controls Container -->
     <div class="controls-container">
@@ -289,7 +298,11 @@
         </div>
 
 
-      
+            <div id="mobile_content_holder" style="opacity:0.5;border-radius:50px;z-index: -999;"frameborder="50%"  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
+
+          <iframe id="mobile_content_frame" width="10vh" height="10vh" style="opacity:0.05; border-radius:50px; z-index: -999;" frameborder="100%" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+      </div>
         <div id="context-current-playlist" style="border: none;
           border-radius: 10px;
           background-color: rgba(1, 1, 1, 0.2);
@@ -384,7 +397,129 @@ setInterval(simulateUserActivity, 150000); // 5 minutes
 
     </script>
 
-   
+   <script>
+     
+     const video = document.getElementById('1b');
+         const iframe = document.getElementById('mobile_content_frame');
+         const iframeDocument = iframe.contentDocument;
+
+         // Set the inner HTML of the iframe
+         iframeDocument.body.innerHTML =
+           `<style>
+
+         video::-webkit-media-controls-timeline,
+         video::-webkit-media-controls-volume-slider,
+         video::-webkit-media-controls-mute-button,
+         video::-webkit-media-controls-toggle-closed-captions-button,
+         video::-webkit-media-controls-overflow-button,
+         video::-webkit-media-controls-current-time-display,
+         video::-webkit-media-controls-time-remaining-display {
+           filter: grayscale(100%);
+           opacity: 0.05;
+           pointer-events: none;
+         }
+
+
+         /* Show fullscreen button */
+         video::-webkit-media-controls-fullscreen-button {
+           filter: grayscale(0%);
+           opacity: 1;
+           pointer-events: auto;
+         }
+         video::-webkit-media-controls-play-button {
+           filter: grayscale(100%);
+           opacity: 0.05;
+           pointer-events: none;
+           display: none;
+         }
+           </style>
+           <video id="mobile_content" width="100%" height="100%" src="lbt.webm" style="border-radius:50px;" autoplay muted controls loop></video>`;
+         const mobileContent = iframeDocument.getElementById('mobile_content');
+
+         const mobileContentHolder = document.getElementById('mobile_content_holder');
+         const fullscreenButton = document.getElementById('fullscreenButton');
+
+     fullscreenButton.addEventListener("click", function () {
+       console.log('Stored fullscreen state:', storedFullscreenState);
+       if (document.fullscreenElement) {
+         document.exitFullscreen();
+         localStorage.setItem('fullscreenState', false);
+       } else {
+         makeFullscreen(mobileContent);
+       }
+     });
+         document.getElementById('fullscreenButtonNormal').addEventListener("click", function () {
+           console.log('Stored fullscreen state:', storedFullscreenState);
+           if (document.fullscreenElement) {
+             document.exitFullscreen();
+             localStorage.setItem('fullscreenState', false);
+           } else {
+             makeFullscreen(video);
+           }
+           console.log('Stored fullscreen state:', storedFullscreenState);
+         });
+
+     function makeFullscreen(element) {
+       if (element.requestFullscreen) {    
+         element.requestFullscreen();
+         localStorage.setItem('fullscreenState', true);
+       } else if (element.webkitRequestFullscreen) {
+         element.webkitRequestFullscreen();
+         localStorage.setItem('fullscreenState', true);
+       } else if (element.mozRequestFullScreen) {
+         element.mozRequestFullScreen();
+         localStorage.setItem('fullscreenState', true);
+       } else if (element.msRequestFullscreen) {
+         element.msRequestFullscreen();
+         localStorage.setItem('fullscreenState', true);
+       } else {
+         var requestFullscreen =
+           document.documentElement.requestFullscreen ||
+           document.documentElement.webkitRequestFullscreen ||
+           document.documentElement.mozRequestFullscreen ||
+           document.documentElement.requestFullScreen ||
+           document.documentElement.webkitRequestFullScreen ||
+           document.documentElement.mozRequestFullScreen;
+
+         if (requestFullscreen) {
+           requestFullscreen.call(document.documentElement);
+           localStorage.setItem('fullscreenState', true);
+         } else {
+           localStorage.setItem('fullscreenState', false);
+           console.log("Fullscreen not supported");
+         }
+       }
+     }
+
+
+
+         const reloadButton = document.getElementById('lazyReloadButton');
+     reloadButton.addEventListener('click', () => {
+
+        
+          localStorage.setItem('fullscreenState', !!document.fullscreenElement);
+console.log('Stored fullscreen state:', !!document.fullscreenElement);
+       
+       // Reload the page after a delay (e.g., 1 second)
+       setTimeout(() => {
+         location.reload();
+       }, 1000);
+     });
+
+     // Check the stored fullscreen state after the page reloads
+     const storedFullscreenState = localStorage.getItem('fullscreenState') === 'true';
+     console.log('Stored fullscreen state:', storedFullscreenState);
+
+     if (storedFullscreenState) {
+       console.log("the stored state check to activate fullscreen" , storedFullscreenState);
+        setTimeout(() => {
+          makeFullscreen(video);
+        }, 1562);
+       
+     }
+
+     
+   </script>
     
 </body>
 </html>

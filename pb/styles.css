@@ -9,8 +9,26 @@ body {
     justify-content: space-between; /* Align items at the top and bottom */
     align-items: center;
     height: 100vh;
+    overflow: auto; 
 }
+body::backdrop,::backdrop{
+  opacity:0;    overflow-y: auto; /* Enable vertical scrolling if content exceeds container height */
 
+}
+iframe::fullscreen{
+  opacity:0.05;
+}
+video::fullscreen{
+  opacity:0.05;
+}
+::fullscreen{
+  opacity:0.05;
+      overflow-y: auto; /* Enable vertical scrolling if content exceeds container height */
+}
+body::fullscreen{
+  opacity:0.05;
+      overflow-y: auto; /* Enable vertical scrolling if content exceeds container height */
+}
 
 .overlay-container {
     opacity: 0.65;
@@ -224,6 +242,7 @@ input[type="reset"]:not(.hide-ui) {
 #clear-taps-button,
 #manual-bpm-button,
 #random-colors-button,
+#fscr,
 #skip-button{
     background-color: rgba(64,64,64,0.9); /* Transparent white background */
     color: rgba(255,239,213,0.9); /* Black text */
@@ -555,3 +574,4 @@ input#transition-slider{
       -webkit-user-modify: read-write-plaintext-only;
       text-align: center;
 }
+
