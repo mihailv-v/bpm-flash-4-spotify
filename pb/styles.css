@@ -30,6 +30,7 @@ body::fullscreen{
       overflow-y: auto; /* Enable vertical scrolling if content exceeds container height */
 }
 
+
 .overlay-container {
     opacity: 0.65;
     background-color: transparent; /* Transparent background */
@@ -111,7 +112,7 @@ label {
     margin-top: 1vh;
     opacity: 0.77;
     color: papayawhip;
-    font-size: 13px;
+    font-size: auto;
 }
 
 
@@ -340,13 +341,12 @@ input[type="checkbox" i] {
     position:absolute;
 }
 
-.toggle-container {
-    /* display: flex;
-    position: sticky;
-    width: 254px; */
-    /* height: 79px; */
-    /* margin-top: 0.20000000000000284vh; */
-
+#progressRange,#volumeRange {
+  display:inline-table;
+  min-width: 200px;
+  max-width:20vw;
+  margin: 15px 0;
+  opacity:0.67;
 }
 
 input[type=range] {
@@ -472,8 +472,9 @@ input#transition-slider{
 }
 
 #playback-controls button {
-    font-size: 16px;
+    font-size: 12px;
     padding: 9px 18px;
+  margin: 3px 7px;
 }
 
 /* Media query for smaller screens */
@@ -486,7 +487,7 @@ input#transition-slider{
     #playback-controls button {
         font-size: 14px; /* Reduce font size */
         padding: 7px 14px; /* Reduce padding */
-        margin: 5px auto; /* Center-align buttons and add margin */
+        margin: 3px 5px; /* Center-align buttons and add margin */
     }
 }
 
@@ -576,12 +577,24 @@ input#transition-slider{
 }
 
 .hidden-controls,body,.overlay-controls,.hide-ui {
-    transition: margin 0.7s ease, padding 0.7s ease;
+    transition: margin 0.3s ease, padding 0.3s ease;
 }
 
 .for-space {
-    transition: 0.7s ease;
+    transition: 0.3s ease;
 }
 * {
-    transition: all 0.7s ease; /* Adjust the duration and easing function as needed */
+  text-size-adjust: auto;
+    transition: all 0.3s ease; /* Adjust the duration and easing function as needed */
+  font-size: 18px;
+}
+
+input[type="range"],.slider {
+  transition: 0.3s ease 0.2s;
+  transition-delay: 0.2s;
+}
+
+.for-space button{
+  margin-top:2.5px;
+  margin-bottom:2.5px;
 }

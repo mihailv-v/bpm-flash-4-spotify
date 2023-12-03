@@ -30,6 +30,9 @@ document.addEventListener("DOMContentLoaded", function () {
     let isShuffleEnabled = false;
     let shuffleFromPlaybackCheck = false;
     let currentSongUrl;
+    let totalDuration = 0;
+    let currentPosition = 0;
+    let currentVolume = 0;
 
 
     // Function to get a cookie value by name
@@ -129,7 +132,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 shuffleFromPlaybackCheck = data.shuffle_state
                 const shuffleIcon = document.getElementById("shuffle-icon");
                 const unshuffleIcon = document.getElementById("unshuffle-icon");
-                                    
+
+              if(data.device && data.device.volume_percent){
+              
+              currentVolume = data.device.volume_percent;
+              console.log("Current Volume:", currentVolume);
+              updateVolumeSlider();
+              }
+
+              totalDuration = data.item.duration_ms;
+              currentPosition = data.progress_ms;
+              
+
+              // Call the function to update the progress bar
+              updateProgressBar(totalDuration, currentPosition);
+              
                 if (!isShuffleEnabled) {
                       unshuffleIcon.style.display = "none";
                       shuffleIcon.style = "";
@@ -367,6 +384,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 const songName = data.item.name;
                 const artists = data.item.artists.map(artist => artist.name).join(', ');
               // console.log(data)
+              totalDuration = data.item.duration_ms;
+              currentPosition = data.progress_ms;
+              
+
+              // Call the function to update the progress bar
+              updateProgressBar(totalDuration, currentPosition);
                 return `${artists} - ${songName}`;
             } else {
                 return "N/A";
@@ -378,6 +401,97 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+function updateVolumeSlider() {
+  const volumeSlider = document.getElementById('volumeRange');
+  
+  // Set the value of the volume slider based on the current volume
+  volumeSlider.value = currentVolume;
+}
+
+// Global variable to store the progress bar element
+const progressRange = document.getElementById('progressRange');
+
+// Function to update the progress bar smoothly
+function updateProgressBar(totalDurationMillis, currentPositionMillis) {
+    // Calculate the percentage of progress
+    const progressPercentage = (currentPositionMillis / totalDurationMillis) * 100;
+
+    // Update the value of the progress bar with a smooth animation
+progressRange.style.transition = `value 0.5s ease-in 0.6s`;
+progressRange.value = progressPercentage;
+}
+
+// Variable to store the timestamp of the last input event
+let lastInputTimestamp1 = 0;
+
+// Event listener for user interaction with the progress bar
+progressRange.addEventListener('change', async function () {
+    const currentTimestamp = new Date().getTime();
+
+    // Calculate the time difference since the last input event
+    const timeDifference = currentTimestamp - lastInputTimestamp1;
+
+    // Update the last input timestamp
+    lastInputTimestamp1 = currentTimestamp;
+
+    // Check if the time difference is greater than a threshold (e.g., 100 milliseconds)
+    if (timeDifference > 1000) {
+        // Your existing logic here
+        const selectedPercentage = progressRange.value;
+        const newPosition = (selectedPercentage / 100) * totalDuration;
+        updateProgressBar(totalDuration, newPosition);
+
+        // Call the function to seek to the new position
+        await seekToPosition(newPosition); // Replace with your actual seek function
+    }
+});
+
+
+
+let isSongProg=false;
+async function seekToPosition(position) {
+  if(!isSongProg){
+    isSongProg = true;
+    if (isTokenExpired) {
+        await checkAndRefreshToken();
+        if (isTokenExpired) {
+            handleTokenExpiration();
+            return;
+        }
+    }
+
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${parseInt(position,10)}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            },
+        });
+
+        if (response.status === 204) {
+          currentPosition = parseInt(position,10);
+          await waitMS(55);
+          updateProgressBar(totalDuration, currentPosition)
+            
+  isSongProg = false;
+          await isPlaybackActive();
+            console.log('Seek successful.');
+        } else if (response.status === 401) {
+            await checkAndRefreshToken();
+            console.log('Seek successful.');
+        } else {
+            console.error('Error seeking to position:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Error seeking to position:', error);
+    }
+  await waitMS(152);
+  isSongProg = false;
+  }
+}
+
+  
+  
       async function embedPlaylist(url) {
 
         const contextDiv = document.getElementById('context-current-playlist');
@@ -1043,10 +1157,12 @@ skipModeDropdown.addEventListener("change", () => {
             skipButton.disabled = false;
             BPMskip.style.display = "none";
             isSkipping = false; // Ensure skipping is turned off
+            // disableElements('.playback-controls')
             
         } else {
             switchButton.disabled = true;
             BPMskip.style.display = "block";
+            // enableElements(".playback-controls")
         }
     }
 
@@ -1056,6 +1172,7 @@ skipModeDropdown.addEventListener("change", () => {
         customTrackURL = "";
         isCustomBPM = false;
         document.getElementById("toggle-container").style.display = "flex";
+        enableElements(".playback-controls")
 
         // Disable the "Switch to Currently Playing" button
         switchToCurrentlyPlayingButton.disabled = true;
@@ -1609,7 +1726,21 @@ submitButton.onclick = function() {
       }
     }
     
-    
+    // Disable all elements with a specific class
+function disableElements(a) {
+    const elements = document.querySelectorAll(a);
+    elements.forEach(element => {
+        element.style.display="none"
+    });
+}
+disableElements(".playback-controls")
+// Enable all elements with a specific class
+function enableElements(a) {
+    const elements = document.querySelectorAll(a);
+    elements.forEach(element => {
+        element.style.display="inline-flex"
+    });
+}
     
     
     // Function to extract colors from an image URL and set custom colors for flashing
@@ -1730,6 +1861,12 @@ submitButton.onclick = function() {
             if (response.status === 200) {
                 const data = await response.json();
                 // Check the playback state
+              if(data.device && data.device.volume_percent){
+
+              currentVolume = data.device.volume_percent;
+              console.log("Current Volume:", currentVolume);
+              updateVolumeSlider();
+              }
               if (data.is_playing) {
         // If currently playing, send a pause request
         const pauseResponse = await fetch('https://api.spotify.com/v1/me/player/pause', {
@@ -1855,12 +1992,14 @@ submitButton.onclick = function() {
 
   
     togglePlayPauseIcon(true); 
-
+let isVolChange = false;
   // Function to update the volume using the Spotify Web API
 async  function updateVolume(volumePercent) {
+  if(!isVolChange){
+  isVolChange = true;
       // Calculate the volume value (0 to 100)
       const volumeValue = Math.min(Math.max(volumePercent, 0), 100);
-  
+  await waitMS(50)
       // Send a request to update the volume
       fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${volumeValue}`, {
           method: 'PUT',
@@ -1881,11 +2020,14 @@ async  function updateVolume(volumePercent) {
       .catch(error => {
           console.error('Error updating volume:', error);
       });
+    await waitMS(400);
+    isVolChange = false;
   }
+}
 
     // Listen for changes in the volume slider
     const volumeSlider = document.getElementById('volumeRange');
-    volumeSlider.addEventListener('input', () => {
+    volumeSlider.addEventListener('change', () => {
         const volumePercent = volumeSlider.value;
         updateVolume(volumePercent);
     });
@@ -2733,6 +2875,7 @@ async function getCurrentTrack() {
 
 // Function to seek to a specific time in the current track
 async function seekToTime(timeInSeconds) {
+//isSongProg
     try {
         const positionMs = Math.floor(timeInSeconds * 1000); // Convert to milliseconds
         const response = await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${positionMs}`, {
@@ -2744,13 +2887,17 @@ async function seekToTime(timeInSeconds) {
 
         if (response.status === 204) {
             console.log(`Seeking to ${timeInSeconds} seconds in the track.`);
-            await wait(200);
+          currentPosition = positionMs;
+          updateProgressBar(totalDuration, currentPosition)
+            console.log('Seek successful.');
+            await waitMS(200);
         } else {
             console.error('Error seeking to specified time:', response.statusText);
         }
     } catch (error) {
         console.error('Error seeking to specified time:', error);
     }
+
 }
 
 // Function to skip to the next song
