@@ -24,7 +24,7 @@ const port = process.env.PORT || 8888;
 const netlifyBaseUrl = 'https://bpm-flash-4-spotify.netlify.app';
 
 // Define the base URL for Repl.it deployment
-const replitBaseUrl = 'https://bpm-flash-4-spotify.mv47.repl.co';
+const replitBaseUrl = 'https://bpm-flash-4-spotify-mv47.replit.app';
 
 // Set the redirect URI based on the environment
 const redirectUri = isReplit ? `${replitBaseUrl}/callback` : `${netlifyBaseUrl}/callback`;
@@ -186,7 +186,7 @@ app.get('/login', function(req, res) {
             scope: scope,
             redirect_uri: redirectUri,
             state: state,
-            show_dialog: isReplit ? false : true
+            show_dialog: isReplit ? true : true
         });
 
     console.log('Redirecting to Spotify login:', spotifyAuthUrl);

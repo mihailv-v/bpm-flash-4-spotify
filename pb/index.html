@@ -26,6 +26,7 @@
                 <p>BPM: <span id="bpm">0</span></p>
             </div>
             <!-- Playback Controls (updated) -->
+          <div class="play-controls">
             <div class="playback-controls" id="playback-controls" style="display: inline-flex;flex-direction: column;flex-wrap: wrap;margin:10px 0;opacity:0.67">
               <div style="
                     justify-items: center;
@@ -70,13 +71,29 @@
                   <input type="range" min="0" max="100" value="0" step="0.05" class="slider" id="progressRange">
               </div>
           </div>
+          </div>
 
+          
         </div>
     </div>
   </div>
   <!-- Button to Show/Hide UI -->
     <div class="for-space" style="justify-items:center;display: flex;flex-direction: column;flex-wrap: wrap;align-content: center;justify-content: center;align-items: stretch;opacity:0.58;">
         <button class="hide-ui" id="hide-ui">Toggle Options</button>
+      
+      <div class="hide-ui" id="zoom-controls" style="justify-items:center;display: flex;flex-direction: column;flex-wrap: wrap;align-content: center;justify-content: center;align-items: stretch;">
+    <label style="justify-items:center;display: flex;flex-direction: column;flex-wrap: wrap;align-content: center;justify-content: center;align-items: stretch;" for="zoomSlider">Zoom:</label>
+    <input type="range" min="30" max="120" value="100" step="5" class="slider" style="max-width:15vh;"id="zoomSlider">
+        <script>
+          document.getElementById('zoomSlider').addEventListener('input', function () {
+    const zoomValue = this.value;
+    document.body.style.transform = `scale(${zoomValue / 100})`;
+});
+          
+
+        </script>
+      </div>
+      
       <div class="hide-ui" style="justify-items:center;display: flex;flex-direction: column;flex-wrap: wrap;align-content: center;justify-content: center;align-items: stretch;">
         <button class="hide-ui" id="subscribe">Mirror Colors </button>
         <span id="code-display" style="

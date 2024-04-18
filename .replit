@@ -7,3 +7,8 @@ channel = "stable-23_05"
 
 [deployment]
 run = ["sh", "-c", "node index.js"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 8888
+externalPort = 80

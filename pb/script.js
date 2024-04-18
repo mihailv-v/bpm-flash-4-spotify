@@ -1157,12 +1157,12 @@ skipModeDropdown.addEventListener("change", () => {
             skipButton.disabled = false;
             BPMskip.style.display = "none";
             isSkipping = false; // Ensure skipping is turned off
-            // disableElements('.playback-controls')
+            disableElements('.playback-controls')
             
         } else {
             switchButton.disabled = true;
             BPMskip.style.display = "block";
-            // enableElements(".playback-controls")
+            enableElements(".playback-controls")
         }
     }
 
@@ -2216,22 +2216,28 @@ function validateRangeInputs(lowRange, highRange) {
     return true;
 }
 
-// Helper function to determine if a skip should be performed based on BPM condition
-async function shouldSkip(input, currentBPM, operation) {
-    if (operation === "above") {
-        // For "above" mode
-        console.log("Checking 'above' mode.");
-        return input <= currentBPM;
-    } else if (operation === "below") {
-        // For "below" mode
-        console.log("Checking 'below' mode.");
-        return input >= currentBPM;
-    } else if (input.lowRange !== undefined && input.highRange !== undefined) {
-        // For "outside" mode
-        console.log("Checking 'outside' mode.");
-        return currentBPM < input.lowRange || currentBPM > input.highRange;
-    }
-}
+// // Helper function to determine if a skip should be performed based on BPM condition
+// async function shouldSkip(input, currentBPM, operation) {
+//   console.log("INsiDE SHOULD SKIPPPP ",input, currentBPM, operation)
+//     switch(operation) {
+//         case "above":
+//             // For "above" mode
+//             console.log("/////////////////////Checking 'above' mode. input:", input, "currentBPM:", currentBPM);
+//             return input < currentBPM;
+//         case "below":
+//             // For "below" mode
+//             console.log("====================Checking 'below' mode. input:", input, "currentBPM:", currentBPM);
+//             return input > currentBPM;
+//         case "outside":
+//             // For "outside" mode
+//             console.log("--------------------Checking 'outside' mode. input:", input, "currentBPM:", currentBPM);
+//             return input.lowRange !== undefined && input.highRange !== undefined && (currentBPM < input.lowRange || currentBPM > input.highRange);
+//         default:
+//             console.log("Invalid operation");
+//             return false;
+//     }
+// }
+
 
 // Helper function to perform skip action after validating input and BPM condition
 async function performSkipAction(input, skipFunction, operation) {
@@ -2242,11 +2248,37 @@ async function performSkipAction(input, skipFunction, operation) {
     const currentBPM = lastKnownBPM;
 
     if (currentBPM !== null) {
-        // Evaluate the BPM condition before performing the skip action
-        if (await shouldSkip(input, currentBPM, operation)) {
-            console.log("Skipping to occur with data:", input, ", currentBPM:", currentBPM, ", operation:", operation);
-            await skipToNext();
-        }
+
+      switch(operation) {
+          case "above":
+              // For "above" mode
+              console.log("/////////////////////Checking 'above' mode. input:", input, "currentBPM:", currentBPM);
+              if(input < currentBPM){
+                console.log("\n Skipping to occur with data:", input, ", currentBPM:", currentBPM, ", operation:", operation);
+                await skipToNext();
+              }
+              break;
+          case "below":
+              // For "below" mode
+              console.log("====================Checking 'below' mode. input:", input, "currentBPM:", currentBPM);
+              if (input > currentBPM){
+                console.log("\n Skipping to occur with data:", input, ", currentBPM:", currentBPM, ", operation:", operation);
+                await skipToNext();
+              }
+              break;
+          case "outside":
+              // For "outside" mode
+              console.log("--------------------Checking 'outside' mode. input:", input, "currentBPM:", currentBPM);
+              if (input.lowRange !== undefined && input.highRange !== undefined && (currentBPM < input.lowRange || currentBPM > input.highRange)){
+                console.log("\n Skipping to occur with data:", input, ", currentBPM:", currentBPM, ", operation:", operation);
+                await skipToNext();
+              }
+              break;
+          default:
+              console.log("Invalid operation");
+              isSkipInProgress = false;
+              return false;
+      }
     }
 
     isSkipInProgress = false; // Reset the flag when skip is complete
