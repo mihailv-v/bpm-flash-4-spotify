@@ -33,6 +33,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let totalDuration = 0;
     let currentPosition = 0;
     let currentVolume = 0;
+  let autoSaveEnabled = false;
+
 
 
     // Function to get a cookie value by name
@@ -700,6 +702,7 @@ wait7Seconds().then((value) => {
                         bpm = await fetchBPMFromSpotify(accessToken);
                         lastKnownBPM = bpm;
                           songAndBPMUpdated=true;
+
                                         if(toggleChecked && document.getElementById("song-details").style.display!=="none"){
                                           if(!isSkipInProgress && toggleChecked){
                                           const currentlyPlayingURL = await fetchTrackURL(accessToken);
@@ -718,7 +721,9 @@ wait7Seconds().then((value) => {
                         bpm = await fetchBPMFromSpotify(accessToken);
                         lastKnownBPM = bpm;
                           songAndBPMUpdated=true;
+                          
                           updateTransition();
+                          
                           const nowPl=document.getElementById("now-playing");
                           nowPl.style.display = "block";
                           nowPl.textContent = `• Now Playing Without Flash\n - \n${lastKnownBPM}`;
@@ -727,7 +732,10 @@ wait7Seconds().then((value) => {
                       
                   }
               lastKnownSongDetails = songTitle;
-
+                          if (songAndBPMUpdated) {
+                              // Call the function to listen for song changes
+                              listenForSongChanges();
+                          }
                 document.getElementById("song-details").style.display = "block";
                 document.getElementById("toggle-container").style.display = "flex";
 
@@ -3197,9 +3205,281 @@ function calculateBPM(tapTimes) {
 
 
 
+  // Function to listen for changes in song details and save the song to a playlist if auto-save is enabled
+  function listenForSongChanges() {
+      // Check if auto-save is enabled and we have valid song details
+      if (autoSaveEnabled && lastKnownSongDetails !== "" && lastKnownBPM !== 0) {
+          // Call function to save the song to a playlist
+          saveSongToPlaylist(lastKnownSongDetails, lastKnownBPM, currentSongUrl);
+      }
+  }
+
+// Function to save the song to a playlist based on its BPM
+async function saveSongToPlaylist(songTitle, bpm, trackURL) {
+    try {
+        // Get the track ID from the Spotify URL
+        const trackId = extractTrackIdFromURL(trackURL);
+        
+        // Create or get the playlist with the name based on BPM
+        const playlistName = `${Math.round(bpm)} BPM`;
+        const playlistId = await getOrCreatePlaylist(playlistName);
+        
+        // Add the track to the playlist
+        await addTrackToPlaylist(trackId, playlistId, accessToken);
+        
+        console.log(`Song "${songTitle}" added to playlist "${playlistName}"`);
+    } catch (error) {
+        console.error("Error saving song to playlist:", error);
+    }
+}
+  
+// // Function to extract the track ID from a Spotify track URL
+// function extractTrackIdFromURL(trackURL) {
+//     // Use a regular expression to extract the track ID from the URL
+//     const match = trackURL.match(/\/track\/([a-zA-Z0-9]+)/);
+
+//     if (match && match[1]) {
+//         return match[1];
+//     } else {
+//         return null;
+//     }
+// }
+
+// async function getUserPlaylists(accessToken) {
+//     try {
+//         const response = await fetch("https://api.spotify.com/v1/me/playlists", {
+//             method: "GET",
+//             headers: {
+//                 "Authorization": `Bearer ${accessToken}`,
+//             },
+//         });
+
+//         if (response.ok) {
+//             const data = await response.json();
+//             return data.items;
+//         } else {
+//             throw new Error("Error fetching user playlists");
+//         }
+//     } catch (error) {
+//         console.error("Error fetching user playlists:", error);
+//         throw error;
+//     }
+// }
+
+// // Function to get or create a playlist based on its name
+// async function getOrCreatePlaylist(playlistName) {
+//     try {
+//         // Get user playlists
+//         const playlists = await getUserPlaylists(accessToken);
+
+//         // Check if the playlist already exists
+//         for (const playlist of playlists) {
+//             if (playlist.name === playlistName) {
+//                 return playlist.id;
+//             }
+//         }
+
+//         // If the playlist doesn't exist, create a new one
+//         const response = await fetch("https://api.spotify.com/v1/me/playlists", {
+//             method: "POST",
+//             headers: {
+//                 "Authorization": `Bearer ${accessToken}`,
+//                 "Content-Type": "application/json",
+//             },
+//             body: JSON.stringify({
+//                 name: playlistName,
+//                 public: false,
+//             }),
+//         });
+
+//         if (response.ok) {
+//             const data = await response.json();
+//             return data.id;
+//         } else {
+//             throw new Error("Error creating playlist");
+//         }
+//     } catch (error) {
+//         console.error("Error getting or creating playlist:", error);
+//         throw error;
+//     }
+// }
+// Function to add a track to a playlist
+  let lastKnowntrackId="";
+async function addTrackToPlaylist(trackId, playlistId, accessToken) {
+  if(trackId!==lastKnowntrackId){
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                uris: [`spotify:track:${trackId}`],
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Error adding track to playlist");
+        }else{
+          lastKnowntrackId=trackId;
+        }
+    } catch (error) {
+        console.error("Error adding track to playlist:", error);
+        throw error;
+    }
+  }
+}
+
+// Function to get or create a playlist based on its name
+async function getOrCreatePlaylist(playlistName) {
+    try {
+        // Get user ID
+        const userId = await getUserId();
+        
+        // Check if the playlist already exists
+        const playlists = await getAllUserPlaylists();
+        for (const playlist of playlists) {
+            if (playlist.name === playlistName) {
+                return playlist.id;
+            }
+        }
+
+        // If the playlist doesn't exist, create a new one
+        const response = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+          body: JSON.stringify({
+            name: playlistName,
+            description: "Playlist created by BPM Flash",
+            public: false,
+          }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.id;
+        } else {
+            throw new Error("Error creating playlist: " + response.status + " - " + response.statusText);
+        }
+    } catch (error) {
+        console.error("Error getting or creating playlist:", error);
+        throw error;
+    }
+}
+
+
+
+
+// Function to fetch user's playlists from Spotify
+  async function getAllUserPlaylists() {
+    try {
+      let allPlaylists = [];
+
+      let nextUrl = `https://api.spotify.com/v1/me/playlists?limit=50`;
+
+      while (nextUrl) {
+        const response = await fetch(nextUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+
+        if (response.ok) {
+          const playlistsBatch = await response.json();
+          allPlaylists = allPlaylists.concat(playlistsBatch.items);
+          nextUrl = playlistsBatch.next; // Get the next URL for pagination
+        } else {
+          console.error('Error fetching user playlists:', response.statusText);
+          return null;
+        }
+      }
+
+      return allPlaylists;
+    } catch (error) {
+      console.error('Error fetching user playlists:', error);
+      return null;
+    }
+  }
+
+
+
+
   
 
+// Function to toggle auto-save
+function toggleAutoSave() {
+  autoSaveEnabled = !autoSaveEnabled;
+}
 
+// Event listener for the auto-save toggle switch
+const autoSaveToggle = document.getElementById("extract-toggle2");
+autoSaveToggle.addEventListener("change", function () {
+  toggleAutoSave();
+});
+
+// Function to get the Spotify user's ID
+async function getUserId() {
+  try {
+    const response = await fetch("https://api.spotify.com/v1/me", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    });
+    if (response.ok) {
+      const userData = await response.json();
+      return userData.id;
+    } else {
+      console.error("Error fetching user ID:", response.statusText);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching user ID:", error);
+    return null;
+  }
+}
+
+
+  document.getElementById("manual-check-add").addEventListener("click", async function() {
+      try {
+        // Change button text to indicate adding
+        this.innerHTML = "Adding...";
+        
+              const currentlyPlayingURL = await fetchTrackURL(accessToken);
+              const trackId = extractTrackIdFromURL(currentlyPlayingURL);
+              const bpm = await fetchBPMFromSpotify(accessToken);
+              const playlistName = Math.round(bpm) + " BPM";
+              const playlistId = await getOrCreatePlaylist(playlistName, accessToken);
+              await addTrackToPlaylist(trackId, playlistId, accessToken);
+              console.log("Song added to playlist ---MANUALLY--- successfully.");
+        // Change button text to indicate successful addition
+        this.innerHTML = "✅";
+
+        // Change button text back to normal after a delay
+        setTimeout(() => {
+            this.innerHTML = "Add in BPM Playlist";
+        }, 1000);
+          }catch (error) {
+          console.error("Error checking and adding song to playlist:", error);
+
+        // Change button text to indicate failure
+        this.innerHTML = "❌";
+        
+        // Change button text back to normal after a delay
+        setTimeout(() => {
+            this.innerHTML = "Add in BPM Playlist";
+        }, 1000);
+    }
+  });
+
+  
+
+  
 function log(message) {
     console.log(message);
 }

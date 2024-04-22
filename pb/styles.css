@@ -244,7 +244,8 @@ input[type="reset"]:not(.hide-ui) {
 #manual-bpm-button,
 #random-colors-button,
 #fscr,
-#skip-button{
+#skip-button,
+#manual-check-add{
     background-color: rgba(64,64,64,0.9); /* Transparent white background */
     color: rgba(255,239,213,0.9); /* Black text */
     border: none; /* Remove the border if desired */
@@ -260,14 +261,14 @@ input[type="reset"]:not(.hide-ui) {
 
 
 /* Add styles for the toggle label */
-.toggle-label,.toggle-label1 {
+.toggle-label,.toggle-label1,.toggle-label2 {
   top: 5px;
   position: relative;
   width:50%;
 }
 
 
-.toggle-container,.toggle-container1{
+.toggle-container,.toggle-container1,.toggle-container2{
     margin-inline-start: auto;
     align-items: flex-start;
     align-content:center;
@@ -284,7 +285,8 @@ input[type="reset"]:not(.hide-ui) {
 
 /* Add styles for the toggle switch label */
 .extract-toggle-label,
-.extract-toggle-label1{
+.extract-toggle-label1,
+.extract-toggle-label2{
   position: absolute;
   top: 0;
   width: 65px;
@@ -297,7 +299,8 @@ input[type="reset"]:not(.hide-ui) {
 
 /* Add styles for the toggle switch slider */
 .extract-toggle-slider,
-.extract-toggle-slider1{
+.extract-toggle-slider1,
+.extract-toggle-slider2{
   position: absolute;
   top: 5px;
   left: 5px;
@@ -326,6 +329,16 @@ input[type="reset"]:not(.hide-ui) {
 
 /* Move the slider to the right when the toggle is in the "on" position */
 .extract-toggle-checkbox1:checked + .extract-toggle-label1 + .extract-toggle-slider1 {
+  transform: translateX(40px);
+}
+
+/* Add styles for the toggle switch in the "on" position */
+.extract-toggle-checkbox2:checked + .extract-toggle-label2 {
+  background-color: rgba(76,217,100,0.9); /* Change to your desired "on" color */
+}
+
+/* Move the slider to the right when the toggle is in the "on" position */
+.extract-toggle-checkbox2:checked + .extract-toggle-label2 + .extract-toggle-slider2 {
   transform: translateX(40px);
 }
 
