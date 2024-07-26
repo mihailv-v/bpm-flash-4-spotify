@@ -32,8 +32,8 @@ const redirectUri = isReplit ? `${replitBaseUrl}/callback` : `${netlifyBaseUrl}/
 // Now you can use the dynamic redirectUri in your code
 console.log('Redirect URI:', redirectUri);
 
-const clientId = process.env.CLIENT_ID; // Updated variable name for clarity
-const clientSecret = process.env.CLIENT_SECRET; // Updated variable name for clarity
+const clientId = process.env.CLIENT_ID_1; // process.env.CLIENT_ID, process.env.CLIENT_ID_1, process.env.CLIENT_ID_2, process.env.CLIENT_ID_3 slej
+const clientSecret = process.env.CLIENT_SECRET_1; // process.env.CLIENT_SECRET, process.env.CLIENT_SECRET_1, process.env.CLIENT_SECRET_2, process.env.CLIENT_SECRET_3
 let lastLoggedIn;
 
 // Set the CORS options based on the environment

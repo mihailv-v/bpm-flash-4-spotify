@@ -33,8 +33,12 @@ document.addEventListener("DOMContentLoaded", function () {
     let totalDuration = 0;
     let currentPosition = 0;
     let currentVolume = 0;
-  let autoSaveEnabled = false;
-
+    let autoSaveEnabled = false;
+    // Variables to track song and BPM changes for auto-saving
+    let autoSaveLastSongDetails = "";
+    let autoSaveLastBPM = 0;
+    let autoSaveLastSongUrl = "";
+    let autoSaveTimeStamp = 0;
 
 
     // Function to get a cookie value by name
@@ -379,13 +383,22 @@ document.addEventListener("DOMContentLoaded", function () {
           
             const data = await response.json();
             if (data.item && data.item.name) {
-              if(data.context && data.context.external_urls){
-              embedPlaylist(data.context.external_urls.spotify)
-              currentSongUrl=data.item.external_urls.spotify;
+              if(data.context && data.context.external_urls && data.context.external_urls.spotify){    
+                  console.log("data.context.external_urls.spotify"+" - "+data.context.external_urls.spotify)
+                        embedPlaylist(data.context.external_urls.spotify)
               }
+              if(data.item.external_urls && data.item.external_urls.spotify){
+                currentSongUrl=data.item.external_urls.spotify;
+                  if(!(data.context && data.context.external_urls && data.context.external_urls.spotify)){   
+                        embedPlaylist(data.item.external_urls.spotify)
+                        }
+            }else{
+                currentSongUrl=null;
+            }
+              
+              console.log(currentSongUrl+" currentsongurl");
                 const songName = data.item.name;
                 const artists = data.item.artists.map(artist => artist.name).join(', ');
-              // console.log(data)
               totalDuration = data.item.duration_ms;
               currentPosition = data.progress_ms;
               
@@ -586,9 +599,10 @@ wait7Seconds().then((value) => {
 
     // Function to extract the track ID from a Spotify track URL
     function extractTrackIdFromURL(trackURL) {
+      
         // Use a regular expression to extract the track ID from the URL
         const match = trackURL.match(/\/track\/([a-zA-Z0-9]+)/);
-
+        console.log(match + " extracted id")
         if (match && match[1]) {
             return match[1];
         } else {
@@ -733,9 +747,13 @@ wait7Seconds().then((value) => {
                   }
               lastKnownSongDetails = songTitle;
                           if (songAndBPMUpdated) {
-                              // Call the function to listen for song changes
-                              listenForSongChanges();
-                          }
+                        // Call the function to listen for song changes
+                        listenForSongChanges();
+                        autoSaveLastSongDetails = lastKnownSongDetails;
+                        autoSaveLastBPM = lastKnownBPM;
+                        autoSaveLastSongUrl = currentSongUrl;
+                        autoSaveTimeStamp = Date.now();
+                    }
                 document.getElementById("song-details").style.display = "block";
                 document.getElementById("toggle-container").style.display = "flex";
 
@@ -1394,7 +1412,7 @@ function becomeMirror() {
       const currentSliderValue = parseFloat(rangeElement.value);
     
       // Calculate the closest step value based on the user's set value
-      const closestStep = Math.round(currentSliderValue / stepSize);
+      const closestStep = thresholdRound(currentSliderValue / stepSize,0.5);
     
       console.log("Current Slider Value:", currentSliderValue);
       console.log("Closest Step:", closestStep);
@@ -3205,31 +3223,78 @@ function calculateBPM(tapTimes) {
 
 
 
-  // Function to listen for changes in song details and save the song to a playlist if auto-save is enabled
+  // // Function to listen for changes in song details and save the song to a playlist if auto-save is enabled V1
+  // function listenForSongChanges() {
+  //     // Check if auto-save is enabled and we have valid song details
+  //     if (autoSaveEnabled && lastKnownSongDetails !== "" && lastKnownBPM !== 0) {
+  //       const autoSaveToggleSpan = document.getElementById("autoSaveSpanText");
+  //       const autoSaveToggleText = document.getElementById("extract-toggle2").checked ? "Auto save in<br>BPM Playlist" : "";
+  //       autoSaveToggleSpan.innerHTML = autoSaveToggleText + " waiting for change";
+  //         // Call function to save the song to a playlist
+  //        console.log(currentSongUrl+" currentsongurl IN AUTO SAVE SONG")
+  //         saveSongToPlaylist(lastKnownSongDetails, lastKnownBPM, currentSongUrl);
+  //     }
+  // }
+
+
+
   function listenForSongChanges() {
       // Check if auto-save is enabled and we have valid song details
       if (autoSaveEnabled && lastKnownSongDetails !== "" && lastKnownBPM !== 0) {
-          // Call function to save the song to a playlist
-          saveSongToPlaylist(lastKnownSongDetails, lastKnownBPM, currentSongUrl);
+        const autoSaveToggleSpan = document.getElementById("autoSaveSpanText");
+        const autoSaveToggleText = "Auto save in<br>BPM Playlist";
+        autoSaveToggleSpan.innerHTML = document.getElementById("extract-toggle2").checked ? autoSaveToggleText + "<br>waiting for change" : autoSaveToggleText;
+
+          const currentTimeStamp = new Date().getTime();
+        console.log((currentTimeStamp - autoSaveTimeStamp)+" currenttimeStamp - autoSaveTimeStamp IN LISTEN TO SONG CHANGED")
+          if (currentTimeStamp - autoSaveTimeStamp >= 5666) {
+              // Call function to save the song to a playlist
+              console.log(currentSongUrl + " currentsongurl IN AUTO SAVE SONG");
+              saveSongToPlaylist(lastKnownSongDetails, lastKnownBPM, currentSongUrl);
+              autoSaveTimeStamp = currentTimeStamp;
+          }
+
       }
   }
 
+
+  
+
+
 // Function to save the song to a playlist based on its BPM
 async function saveSongToPlaylist(songTitle, bpm, trackURL) {
+  const autoSaveToggleSpan = document.getElementById("autoSaveSpanText");
+  const autoSaveToggleText = document.getElementById("extract-toggle2").checked ? "Auto save in<br>BPM Playlist" : "";
     try {
+        autoSaveToggleSpan.innerHTML = autoSaveToggleText + " ⏳";
         // Get the track ID from the Spotify URL
         const trackId = extractTrackIdFromURL(trackURL);
-        
+        // Add loading indicator
+        autoSaveToggleSpan.innerHTML = autoSaveToggleText + " ⏳";
         // Create or get the playlist with the name based on BPM
-        const playlistName = `${Math.round(bpm)} BPM`;
+        const playlistName = `${thresholdRound(bpm,0.495)} BPM`;
         const playlistId = await getOrCreatePlaylist(playlistName);
-        
+        autoSaveToggleSpan.innerHTML = autoSaveToggleText + " ⏳";
         // Add the track to the playlist
         await addTrackToPlaylist(trackId, playlistId, accessToken);
+        autoSaveToggleSpan.innerHTML = autoSaveToggleText + " ⏳";
+                // Change to success indicator
+        autoSaveToggleSpan.innerHTML = autoSaveToggleText+": "+ playlistName +"<br> ✅ " ;
         
+        // Reset to default text after 5 seconds
+        setTimeout(() => {
+            autoSaveToggleSpan.innerHTML = autoSaveToggleText;
+        }, 7000);
         console.log(`Song "${songTitle}" added to playlist "${playlistName}"`);
     } catch (error) {
         console.error("Error saving song to playlist:", error);
+      // Change to error indicator
+      autoSaveToggleSpan.innerHTML = autoSaveToggleText+" ❌ ";
+
+      // Reset to default text after 5 seconds
+      setTimeout(() => {
+          autoSaveToggleSpan.innerHTML = autoSaveToggleText;
+      }, 7000);
     }
 }
   
@@ -3304,6 +3369,11 @@ async function saveSongToPlaylist(songTitle, bpm, trackURL) {
 //     }
 // }
 // Function to add a track to a playlist
+
+
+  let allUserPlaylists = [];
+
+  
   let lastKnowntrackId="";
 async function addTrackToPlaylist(trackId, playlistId, accessToken) {
   if(trackId!==lastKnowntrackId){
@@ -3338,13 +3408,14 @@ async function getOrCreatePlaylist(playlistName) {
         const userId = await getUserId();
         
         // Check if the playlist already exists
-        const playlists = await getAllUserPlaylists();
+        const playlists = await getAllUserPlaylists(playlistName);
+      if(playlists){
         for (const playlist of playlists) {
             if (playlist.name === playlistName) {
                 return playlist.id;
             }
         }
-
+      }
         // If the playlist doesn't exist, create a new one
         const response = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
             method: "POST",
@@ -3354,13 +3425,16 @@ async function getOrCreatePlaylist(playlistName) {
             },
           body: JSON.stringify({
             name: playlistName,
-            description: "Playlist created by BPM Flash",
-            public: false,
+            description: "Playlist created by BPM Flash - @mihailv_ar | @mihailv_photos",
+            public: true,
           }),
         });
 
         if (response.ok) {
+            
             const data = await response.json();
+          console.log(`Playlist made for ${playlistName}: ${data}`)
+          allUserPlaylists = allUserPlaylists.concat(data)
             return data.id;
         } else {
             throw new Error("Error creating playlist: " + response.status + " - " + response.statusText);
@@ -3374,12 +3448,84 @@ async function getOrCreatePlaylist(playlistName) {
 
 
 
-// Function to fetch user's playlists from Spotify
-  async function getAllUserPlaylists() {
+// // Function to fetch user's playlists from Spotify v1
+//   async function getAllUserPlaylists(playlistName) {
+//     try {
+//       let allPlaylists = [];
+
+//       let nextUrl = `https://api.spotify.com/v1/me/playlists?limit=40`;
+
+//       while (nextUrl) {
+//         const response = await fetch(nextUrl, {
+//           method: 'GET',
+//           headers: {
+//             'Authorization': `Bearer ${accessToken}`,
+//           },
+//         });
+
+//         if (response.ok) {
+//           const playlistsBatch = await response.json();
+//           // Check if the playlist already exists
+//           for (const playlist of playlistsBatch.items) {
+//               if (playlist.name === playlistName) {
+//                   return [playlist]; // Playlist found, return all playlists
+//               }
+//           }
+//           allPlaylists = allPlaylists.concat(playlistsBatch.items);
+//           // Generate random cooldown time between 0.5 and 2 seconds
+//           const cooldownTime = Math.random() * (1.875 - 0.87) + 0.87;
+//           await new Promise(resolve => setTimeout(resolve, cooldownTime * 1000)); // Convert to milliseconds
+//           console.log('Done with chunk:', nextUrl, "next page: ", playlistsBatch.next);
+//           nextUrl = playlistsBatch.next; // Get the next URL for pagination
+//         } else {
+//           console.error('Error fetching user playlists:', response.statusText, "next page of fail: ", nextUrl);
+//           return null;
+//         }
+//       }
+
+//       return allPlaylists;
+//     } catch (error) {
+//       console.error('Error fetching user playlists:', error);
+//       return null;
+//     }
+//   }
+
+  // Function to fetch user's playlists from Spotify
+  async function getAllUserPlaylists(playlistName) {
+    try {
+      if (allUserPlaylists.length === 0) {
+        // Fetch all playlists if the local cache is empty
+        await fetchAndUpdatePlaylists();
+      }
+
+      // Check if the playlist already exists
+      const existingPlaylist = allUserPlaylists.find(playlist => playlist.name === playlistName);
+      if (existingPlaylist) {
+        console.log(`Playlist "${playlistName}" found in local cache.`);
+        return [existingPlaylist];
+      } else {
+        console.log(`Playlist "${playlistName}" not found in local cache. Fetching all playlists...`);
+        await fetchAndUpdatePlaylists();
+        const updatedPlaylist = allUserPlaylists.find(playlist => playlist.name === playlistName);
+        if (updatedPlaylist) {
+          console.log(`Playlist "${playlistName}" found after update.`);
+          return [updatedPlaylist];
+        } else {
+          console.log(`Playlist "${playlistName}" still not found.`);
+          return null;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user playlists:', error);
+      return null;
+    }
+  }
+
+  // Function to fetch and update user's playlists from Spotify
+  async function fetchAndUpdatePlaylists() {
     try {
       let allPlaylists = [];
-
-      let nextUrl = `https://api.spotify.com/v1/me/playlists?limit=50`;
+      let nextUrl = `https://api.spotify.com/v1/me/playlists?limit=40`;
 
       while (nextUrl) {
         const response = await fetch(nextUrl, {
@@ -3389,23 +3535,27 @@ async function getOrCreatePlaylist(playlistName) {
           },
         });
 
-        if (response.ok) {
-          const playlistsBatch = await response.json();
-          allPlaylists = allPlaylists.concat(playlistsBatch.items);
-          nextUrl = playlistsBatch.next; // Get the next URL for pagination
-        } else {
+        if (!response.ok) {
           console.error('Error fetching user playlists:', response.statusText);
-          return null;
+          return;
         }
+
+        const playlistsBatch = await response.json();
+        allPlaylists = allPlaylists.concat(playlistsBatch.items);
+        nextUrl = playlistsBatch.next; // Get the next URL for pagination
+
+        // Generate random cooldown time between 0.777 and 1.77 seconds
+        const cooldownTime = Math.random() * (1.77 - 0.777) + 0.777;
+        await new Promise(resolve => setTimeout(resolve, cooldownTime * 1000)); // Convert to milliseconds
       }
 
-      return allPlaylists;
+      allUserPlaylists = allPlaylists;
+      localStorage.setItem('userPlaylists', JSON.stringify(allPlaylists));
+      console.log('User playlists updated and saved to local storage.');
     } catch (error) {
       console.error('Error fetching user playlists:', error);
-      return null;
     }
   }
-
 
 
 
@@ -3420,6 +3570,9 @@ function toggleAutoSave() {
 const autoSaveToggle = document.getElementById("extract-toggle2");
 autoSaveToggle.addEventListener("change", function () {
   toggleAutoSave();
+  if(autoSaveEnabled){
+    listenForSongChanges();
+  }
 });
 
 // Function to get the Spotify user's ID
@@ -3448,35 +3601,56 @@ async function getUserId() {
   document.getElementById("manual-check-add").addEventListener("click", async function() {
       try {
         // Change button text to indicate adding
-        this.innerHTML = "Adding...";
-        
+        this.innerHTML = "⏳";
+        const manualSongTitle = lastKnownSongDetails;
               const currentlyPlayingURL = await fetchTrackURL(accessToken);
               const trackId = extractTrackIdFromURL(currentlyPlayingURL);
               const bpm = await fetchBPMFromSpotify(accessToken);
-              const playlistName = Math.round(bpm) + " BPM";
+              const playlistName = thresholdRound(bpm,0.495) + " BPM";
               const playlistId = await getOrCreatePlaylist(playlistName, accessToken);
               await addTrackToPlaylist(trackId, playlistId, accessToken);
-              console.log("Song added to playlist ---MANUALLY--- successfully.");
+              console.log(`Song ${manualSongTitle} added to playlist ${playlistName} ---MANUALLY--- successfully.`);
         // Change button text to indicate successful addition
-        this.innerHTML = "✅";
+        this.innerHTML = "✅ to " + playlistName;
 
         // Change button text back to normal after a delay
         setTimeout(() => {
             this.innerHTML = "Add in BPM Playlist";
-        }, 1000);
+        }, 7000);
           }catch (error) {
           console.error("Error checking and adding song to playlist:", error);
 
         // Change button text to indicate failure
-        this.innerHTML = "❌";
+        this.innerHTML = "❌ to " + playlistName;
         
         // Change button text back to normal after a delay
         setTimeout(() => {
             this.innerHTML = "Add in BPM Playlist";
-        }, 1000);
+        }, 7000);
     }
   });
 
+
+function iterativeRounding(num) {
+  let tempNum = Math.round(num * 100) / 100; // Round to two decimal places
+  tempNum = Math.round(tempNum * 10) / 10;   // Round to one decimal place
+  tempNum = Math.round(tempNum * 10) / 10;   // Round to one decimal place
+  tempNum = Math.round(tempNum);            // Round to nearest whole number
+  return tempNum;
+}
+function thresholdRound(number, threshold) {
+  // Extract the digits after the decimal point
+  let decimalPart = number - Math.floor(number);
+  
+  // Check if the decimal part is greater than or equal to the threshold
+  if (decimalPart >= threshold) {
+    // If so, round up
+    return Math.ceil(number);
+  } else {
+    // If not, round down
+    return Math.floor(number);
+  }
+}
   
 
   

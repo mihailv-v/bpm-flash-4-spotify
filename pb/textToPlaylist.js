@@ -1304,6 +1304,7 @@ async function fetchPlaylistData(playlistName) {
 }
 
 async function getBPMForTrack(trackId) {
+  await wait(getRandomArbitrary(1, 2, 'seconds') * 1000); // Cooldown
   try {
     // Fetch audio features for the track
     const response = await fetch(`https://api.spotify.com/v1/audio-features/${trackId}`, {
@@ -2414,6 +2415,9 @@ async function fetchAllUserPlaylists() {
             if (response.ok) {
                 const data = await response.json();
                 playlists = playlists.concat(data.items);
+              const cooldownTime = Math.random() * (1.875 - 0.87) + 0.87;
+              await new Promise(resolve => setTimeout(resolve, cooldownTime * 1000)); // Convert to milliseconds
+              console.log('Done with chunk:', url, "next page: ", data.next);
                 url = data.next;
             } else {
                 throw new Error(`Failed to fetch playlists: ${response.status} - ${response.statusText}`);
@@ -3239,6 +3243,813 @@ function loadDataFromCache() {
         });
     });
 }
+
+
+
+
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('generate-bpm-playlist').addEventListener('click', async () => {
+        const playlistName = document.getElementById('bpm-playlist-name').value;
+        const searchOption = document.getElementById('search-option').value;
+        const playlistId = await searchForPlaylist(searchOption, playlistName);
+
+        if (playlistId) {
+            const playlistInfo = await getPlaylistInfo(playlistId);
+            const confirmed = await confirmPlaylist(playlistInfo);
+
+            if (confirmed) {
+                const tracks = await getAllTracksFromPlaylist(playlistId);
+
+                if (tracks && tracks.length > 0) {
+                    await generateBPMPlaylists(tracks,playlistInfo.name);
+                } else {
+                    addToBPMGenerationLog(`No tracks found in playlist "${playlistName}"`);
+                }
+            } else {
+                addToBPMGenerationLog(`Playlist "${playlistName}" confirmation cancelled`);
+            }
+        } else {
+            addToBPMGenerationLog(`Playlist "${playlistName}" not found`);
+        }
+    });
+});
+
+async function getAllTracksFromPlaylist(playlistId) {
+    try {
+        const allTracks = [];
+
+        let offset = 0;
+        let hasNextPage = true;
+
+        while (hasNextPage) {
+            const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50&offset=${offset}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error fetching playlist tracks: ${response.status} - ${response.statusText}`);
+            }
+
+            const playlistTracks = await response.json();
+
+            // Add the fetched tracks to the array
+            allTracks.push(...playlistTracks.items);
+
+            // Check if there's a next page of tracks
+            hasNextPage = playlistTracks.next !== null;
+
+            // If there's a next page, update the offset for the next request
+            if (hasNextPage) {
+                offset += 50;
+            }
+
+            await wait(getRandomArbitrary(0.777, 1.77, 'seconds') * 1000); // Cooldown
+        }
+
+        return allTracks;
+
+    } catch (error) {
+        console.error('Error fetching playlist tracks:', error);
+        throw error;
+    }
+}
+
+let allUserPlaylists = [];
+let failedTrackAttempts = [];
+
+
+
+async function generateBPMPlaylists(tracks, prevPlaylistName) {
+    for (const track of tracks) {
+        const trackName = track.track.name;
+        const artistNames = track.track.artists.map(artist => artist.name).join(', ');
+        const trackId = track.track.id;
+        const bpm = await getBPMForTrack(trackId);
+
+        if (bpm) {
+            const roundedBPM = thresholdRound(bpm,0.495);
+            const playlistName = `${roundedBPM} BPM`;
+
+            let playlist = await getAllUserPlaylistsWithCooldown(playlistName);
+
+            if (!playlist) {
+                playlist = await createBPMPlaylist(playlistName);
+            }else{
+                  for (const playlist1 of playlist) {
+                    if (playlist1.name === playlistName) {
+                        playlist = playlist1;
+                    }
+                }
+            }
+
+            const success = await addTrackToPlaylist(trackId, playlist.id);
+            if (success) {
+              addToBPMGenerationLog((tracks.indexOf(track) + 1) + " of " + tracks.length +"<br>tracks done from " + prevPlaylistName + ", track id: " + trackId)
+                addToBPMGenerationLog(`Song "${trackName} - ${artistNames}" - ${bpm} BPM added to playlist "${playlistName}"`);
+            } else {
+              addToBPMGenerationLog((tracks.indexOf(track) + 1) + " of " + tracks.length +"<br>tracks NOT done for " + prevPlaylistName + ", track id: " + trackId)
+                // addToBPMGenerationLog(`Failed to add song "${trackName} - ${artistNames}" - ${bpm} BPM to playlist "${playlistName}"`);
+              addToBPMGenerationLog(`Failed to add song "${trackName} - ${artistNames}" - ${bpm} BPM to playlist "${playlistName}"`, trackId, playlist.id);
+
+              
+            }
+
+            await wait(getRandomArbitrary(20, 40, 'seconds') * 1000); // Cooldown
+        }else{
+                        addToBPMGenerationLog(`Failed to fetch BPM for song "${trackName} - ${artistNames}"`);
+        }
+    }
+}
+
+
+// // Function to fetch user's playlists from Spotify V1
+// async function getAllUserPlaylistsWithCooldown(playlistName) {
+//   try {
+//     let allPlaylists = [];
+
+//     let nextUrl = `https://api.spotify.com/v1/me/playlists?limit=40`;
+
+//     while (nextUrl) {
+//       const response = await fetch(nextUrl, {
+//         method: 'GET',
+//         headers: {
+//           'Authorization': `Bearer ${accessToken}`,
+//         },
+//       });
+
+//       if (response.ok) {
+//         const playlistsBatch = await response.json();
+//         // Check if the playlist already exists
+//         for (const playlist of playlistsBatch.items) {
+//             if (playlist.name === playlistName) {
+//               console.log(`returning ${playlist.name} playlist ${playlist}`);
+//                 return [playlist]; // Playlist found, return all playlists
+//             }
+//         }
+//         allPlaylists = allPlaylists.concat(playlistsBatch.items);
+//         // Generate random cooldown time between 0.5 and 2 seconds
+//         const cooldownTime = Math.random() * (1.875 - 0.87) + 0.87;
+//         await new Promise(resolve => setTimeout(resolve, cooldownTime * 1000)); // Convert to milliseconds
+//         console.log('Done with chunk:', nextUrl, "next page: ", playlistsBatch.next);
+//         nextUrl = playlistsBatch.next; // Get the next URL for pagination
+//       } else {
+//         console.error('Error fetching user playlists:', response.statusText, "next page of fail: ", nextUrl);
+//         return null;
+//       }
+//     }
+
+//     return allPlaylists;
+//   } catch (error) {
+//     console.error('Error fetching user playlists:', error);
+//     return null;
+//   }
+// }
+
+// let allUserPlaylists = [];
+
+// // Function to fetch user's playlists from Spotify v2
+// async function getAllUserPlaylistsWithCooldown(playlistName) {
+//   try {
+//     if (allUserPlaylists.length === 0) {
+//       // If the playlists are not fetched, fetch them and save them locally
+//       const fetchedPlaylists = await fetchAllUserPlaylists();
+//       if (fetchedPlaylists) {
+//         allUserPlaylists = fetchedPlaylists;
+//       } else {
+//         console.error('Failed to fetch user playlists.');
+//         return null;
+//       }
+//     }
+
+//     // Check if the playlist already exists
+//     const existingPlaylist = allUserPlaylists.find(playlist => playlist.name === playlistName);
+//     if (existingPlaylist) {
+//       console.log(`Playlist "${playlistName}" found in local cache.`);
+//       return [existingPlaylist];
+//     } else {
+//       // Playlist not found, fetch all playlists to get the new one
+//       console.log(`Playlist "${playlistName}" not found in local cache. Fetching all playlists.`);
+//       const allPlaylists = await fetchAllUserPlaylists();
+//       if (allPlaylists) {
+//         const newPlaylist = allPlaylists.find(playlist => playlist.name === playlistName);
+//         if (newPlaylist) {
+//           // Save the new playlist to the local variable
+//           allUserPlaylists.push(newPlaylist);
+//           return [newPlaylist];
+//         } else {
+//           console.error(`Playlist "${playlistName}" not found.`);
+//           return null;
+//         }
+//       } else {
+//         console.error('Failed to fetch user playlists.');
+//         return null;
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Error fetching user playlists:', error);
+//     return null;
+//   }
+// }
+
+
+
+// Function to fetch user's playlists from Spotify
+async function getAllUserPlaylistsWithCooldown(playlistName) {
+  try {
+    if (allUserPlaylists.length === 0) {
+      // If the playlists are not fetched, fetch them and save them locally
+      const fetchedPlaylists = await fetchAllUserPlaylists();
+      if (fetchedPlaylists) {
+        allUserPlaylists = fetchedPlaylists;
+      } else {
+        console.error('Failed to fetch user playlists.');
+        return null;
+      }
+    }
+
+    // Check if the playlist already exists
+    const existingPlaylist = allUserPlaylists.find(playlist => playlist.name === playlistName);
+    if (existingPlaylist) {
+      console.log(`Playlist "${playlistName}" found in local cache.`);
+      return [existingPlaylist];
+    } else {
+      // Playlist not found, fetch all playlists to get the new one
+      console.log(`Playlist "${playlistName}" not found in local cache. Fetching all playlists.`);
+      const allPlaylists = await fetchAllUserPlaylists();
+      if (allPlaylists) {
+        const newPlaylist = allPlaylists.find(playlist => playlist.name === playlistName);
+        if (newPlaylist) {
+          // Save the new playlist to the local variable
+          allUserPlaylists.push(newPlaylist);
+          return [newPlaylist];
+        } else {
+          console.log(`Playlist "${playlistName}" not found.`);
+          return null;
+        }
+      } else {
+        console.error('Failed to fetch user playlists.');
+        return null;
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching user playlists:', error);
+    return null;
+  }
+}
+
+async function createBPMPlaylist(playlistName) {
+    try {
+        // Get user ID
+        const userId = await getUserDetails();
+
+        // Create a new playlist
+        const response = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: playlistName,
+                description: 'Playlist created by BPM Flash - @mihailv_ar | @mihailv_photos',
+                public: true,
+            }),
+        });
+
+        if (!response.ok) {
+          addToBPMGenerationLog(`Playlist "${playlistName}" NOT created`);
+            throw new Error(`Error creating playlist: ${response.status} - ${response.statusText}`);
+        }else{
+          addToBPMGenerationLog(`Playlist "${playlistName}" created`);
+        }
+        const data = await response.json();
+
+        allUserPlaylists = allUserPlaylists.concat(data)
+        return data;
+    } catch (error) {
+      addToBPMGenerationLog(`Playlist "${playlistName}" NOT created`);
+        console.error('Error creating playlist:', error);
+        throw error;
+    }
+}
+
+async function addTrackToPlaylist(trackId, playlistId) {
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?uris=spotify%3Atrack%3A${trackId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error adding track to playlist: ${response.status} - ${response.statusText}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error adding track to playlist:', error);
+        failedTrackAttempts.push(trackId);
+        return false;
+    }
+}
+
+function addToBPMGenerationLog(message, trackId, playlistId) {
+    const log = document.getElementById('bpm-generation-log');
+    const li = document.createElement('li');
+    li.textContent = message;
+    if (trackId && playlistId && message.includes('Failed')) {
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Retry';
+        retryButton.addEventListener('click', () => retryFailedTrack(trackId, playlistId));
+        li.appendChild(retryButton);
+    }
+    log.appendChild(li);
+}
+
+
+async function retryFailedTrack(trackId, playlistId) {
+    const index = failedTrackAttempts.indexOf(trackId);
+    if (index !== -1) {
+        failedTrackAttempts.splice(index, 1);
+        const success = await addTrackToPlaylist(trackId, playlistId);
+        if (success) {
+            addToBPMGenerationLog(`Retry: Song "${trackId}" added to playlist.`);
+        } else {
+            addToBPMGenerationLog(`Retry failed: Song "${trackId}" couldn't be added to playlist.`);
+        }
+    }
+}
+
+async function getPlaylistInfo(playlistId) {
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch playlist info: ${response.status} - ${response.statusText}`);
+        }
+
+        const playlistData = await response.json();
+        return {
+            name: playlistData.name,
+            creator: playlistData.owner.display_name,
+            id: playlistData.id,
+            url: playlistData.external_urls.spotify
+        };
+    } catch (error) {
+        console.error("Error fetching playlist info:", error);
+        throw error;
+    }
+}
+
+
+    async function confirmPlaylist(playlistInfo) {
+        return new Promise((resolve, reject) => {
+            const confirmDiv = document.createElement('div');
+            confirmDiv.innerHTML = `
+                <p>Is this the correct playlist?</p>
+                <p>Name: ${playlistInfo.name}</p>
+                <p>Creator: ${playlistInfo.creator}</p>
+                <p>ID: ${playlistInfo.id}</p>
+                <p><a href="${playlistInfo.url}" target="_blank">Link to Playlist</a></p>
+                <button id="confirm-playlist">Confirm</button>
+                <button id="cancel-playlist">Cancel</button>
+            `;
+
+            document.getElementById('confirm-playlist-container').innerHTML = ''; // Clear previous confirm message
+            document.getElementById('confirm-playlist-container').appendChild(confirmDiv);
+
+            document.getElementById('confirm-playlist').addEventListener('click', () => {
+                confirmDiv.remove();
+                resolve(true);
+            });
+
+            document.getElementById('cancel-playlist').addEventListener('click', () => {
+                confirmDiv.remove();
+                resolve(false);
+            });
+        });
+    }
+
+
+
+
+function iterativeRounding(num) {
+  let tempNum = Math.round(num * 100) / 100; // Round to two decimal places
+  tempNum = Math.round(tempNum * 10) / 10;   // Round to one decimal place
+  tempNum = Math.round(tempNum * 10) / 10;   // Round to one decimal place
+  tempNum = Math.round(tempNum);            // Round to nearest whole number
+  return tempNum;
+}
+function thresholdRound(number, threshold) {
+  // Extract the digits after the decimal point
+  let decimalPart = number - Math.floor(number);
+  
+  // Check if the decimal part is greater than or equal to the threshold
+  if (decimalPart >= threshold) {
+    // If so, round up
+    return Math.ceil(number);
+  } else {
+    // If not, round down
+    return Math.floor(number);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+// Function to fetch user playlists from Spotify
+async function fetchAllUserPlaylistsMapped() {
+    try {
+        const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + accessToken
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch user playlists');
+        }
+
+        const data = await response.json();
+        return data.items.map(item => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            link: item.external_urls.spotify,
+            image: item.images.length > 0 ? item.images[0].url : 'https://via.placeholder.com/150',
+            isPublic: item.public
+        }));
+    } catch (error) {
+        console.error('Error fetching user playlists:', error);
+        return null;
+    }
+}
+
+// Function to delete a playlist
+async function deletePlaylist(playlistId) {
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/followers`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + accessToken,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete playlist');
+        }
+
+        console.log(`Playlist with ID ${playlistId} deleted successfully`);
+    } catch (error) {
+        console.error('Error deleting playlist:', error);
+    }
+}
+
+// Function to set a playlist to public
+async function setPlaylistPublic(playlistId) {
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + accessToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                public: true
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to set playlist to public');
+        }
+
+        console.log(`Playlist with ID ${playlistId} set to public successfully`);
+    } catch (error) {
+        console.error('Error setting playlist to public:', error);
+    }
+}
+
+// Function to set a playlist to private
+async function setPlaylistPrivate(playlistId) {
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + accessToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                public: false
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to set playlist to private');
+        }
+
+        console.log(`Playlist with ID ${playlistId} set to private successfully`);
+    } catch (error) {
+        console.error('Error setting playlist to private:', error);
+    }
+}
+
+// Function to change playlist description
+async function changePlaylistDescription(playlistId, newDescription) {
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + accessToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                description: newDescription
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to change playlist description');
+        }
+
+        console.log(`Playlist description for ID ${playlistId} changed successfully`);
+    } catch (error) {
+        console.error('Error changing playlist description:', error);
+    }
+}
+
+// Function to change playlist name
+async function changePlaylistName(playlistId, newName) {
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + accessToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: newName
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to change playlist name');
+        }
+
+        console.log(`Playlist name for ID ${playlistId} changed successfully`);
+    } catch (error) {
+        console.error('Error changing playlist name:', error);
+    }
+}
+
+
+// Function to display user playlists
+async function displayUserPlaylists() {
+    try {
+        const userPlaylists = await fetchAllUserPlaylistsMapped();
+        if (userPlaylists) {
+            const playlistContainer = document.getElementById('playlist-container');
+            playlistContainer.innerHTML = '';
+            userPlaylists.forEach(playlist => {
+                const playlistCard = createPlaylistCard(playlist);
+                playlistContainer.appendChild(playlistCard);
+            });
+        } else {
+            console.error('Failed to fetch user playlists.');
+        }
+    } catch (error) {
+        console.error('Error displaying user playlists:', error);
+    }
+}
+
+// // Function to create a playlist card
+// function createPlaylistCard(playlist) {
+//     const card = document.createElement('div');
+//     card.classList.add('playlist-card');
+//     card.innerHTML = `
+//         <img src="${playlist.image}" alt="Playlist Image">
+//         <p>Name: ${playlist.name}</p>
+//         <p>ID: ${playlist.id}</p>
+//         <p>Link: <a href="${playlist.link}" target="_blank">Open Playlist</a></p>
+//         <label for="description-${playlist.id}">Change Description:</label>
+//         <input type="text" id="description-${playlist.id}" placeholder="New Description">
+//         <label for="name-${playlist.id}">Change Name:</label>
+//         <input type="text" id="name-${playlist.id}" placeholder="New Name">
+//         <button class="status" id="delete-${playlist.id}">Delete</button>
+//         <button class="status" id="public-${playlist.id}">Set Public</button>
+//         <button class="status" id="private-${playlist.id}">Set Private</button>
+//         <button class="status" id="change-description-${playlist.id}">Change Description</button>
+//         <button class="status" id="change-name-${playlist.id}">Change Name</button>
+//     `;
+//     return card;
+// }
+
+// Function to create a playlist card
+function createPlaylistCard(playlist) {
+    const card = document.createElement('article');
+    card.classList.add('playlist-card');
+
+    card.innerHTML = `
+        <div class="article-wrapper">
+            <figure>
+                <img src="${playlist.image}" alt="Playlist Image">
+            </figure>
+            <div class="article-body">
+                <h2>${playlist.name}</h2>
+                <p>ID: ${playlist.id}</p>
+                <p>Link: <a href="${playlist.link}" target="_blank">Open Playlist</a></p>
+                <p>Description: ${playlist.description}</p>
+                <label for="description-${playlist.id}">Change Description:</label>
+                <input class="playlist-card-input" type="text" id="description-${playlist.id}" placeholder="New Description">
+                <button class="status playlist-card-input" id="change-description-${playlist.id}">Change Description</button>
+                <label for="name-${playlist.id}">Change Name:</label>
+                <input class="playlist-card-input" type="text" id="name-${playlist.id}" placeholder="New Name">
+                <button class="status playlist-card-input" id="change-name-${playlist.id}">Change Name</button>
+                <div class="playlist-card-buttons">
+                    <button class="status" id="delete-${playlist.id}">Delete</button>
+                    <div>
+                        <button class="status" id="public-${playlist.id}">Set Public</button>
+                        <button class="status" id="private-${playlist.id}">Set Private</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return card;
+}
+
+
+// Event listener for managing playlists
+document.getElementById('manage-playlists-button').addEventListener('click', async () => {
+    // Display playlist management section
+    document.getElementById('playlist-management-section').style.display = 'block';
+    // Display user playlists
+    await displayUserPlaylists();
+});
+
+// Event listener for done with playlist management button
+document.getElementById('done-managing-playlists').addEventListener('click', () => {
+    // Hide playlist management section
+    document.getElementById('playlist-management-section').style.display = 'none';
+});
+
+// Event listener for managing playlists
+document.getElementById('manage-playlists-button').addEventListener('click', async () => {
+    // Display playlist management section
+    document.getElementById('playlist-management-section').style.display = 'block';
+    // Display user playlists
+    await displayUserPlaylists();
+
+    // Add event listeners for each playlist card
+    document.getElementById('playlist-container').addEventListener('click', async (event) => {
+        const target = event.target.closest('.status');
+        if (!target) return;
+
+        const id = target.id.split('-')[1];
+        const action = target.dataset.action;
+
+        // Change button text to indicate processing
+        target.innerHTML = '⏳';
+
+        switch (action) {
+            case 'delete':
+                try {
+                    // Delete playlist
+                    await deletePlaylist(id);
+                    // Change button text to indicate successful deletion
+                    target.innerHTML = '✅ Deleted';
+                } catch (error) {
+                    console.error('Error deleting playlist:', error);
+                    // Change button text to indicate failure
+                    target.innerHTML = '❌ Delete Failed';
+                }
+                break;
+
+            case 'public':
+                try {
+                    // Set playlist to public
+                    await setPlaylistPublic(id);
+                    // Change button text to indicate successful change
+                    target.innerHTML = '✅ Set Public';
+                } catch (error) {
+                    console.error('Error setting playlist to public:', error);
+                    // Change button text to indicate failure
+                    target.innerHTML = '❌ Set Public Failed';
+                }
+                break;
+
+            case 'private':
+                try {
+                    // Set playlist to private
+                    await setPlaylistPrivate(id);
+                    // Change button text to indicate successful change
+                    target.innerHTML = '✅ Set Private';
+                } catch (error) {
+                    console.error('Error setting playlist to private:', error);
+                    // Change button text to indicate failure
+                    target.innerHTML = '❌ Set Private Failed';
+                }
+                break;
+
+            case 'change-description':
+                try {
+                    // Get new description
+                    const newDescription = document.getElementById(`description-${id}`).value;
+                    // Change playlist description
+                    await changePlaylistDescription(id, newDescription);
+                    // Change button text to indicate successful change
+                    target.innerHTML = '✅ Description Changed';
+                } catch (error) {
+                    console.error('Error changing playlist description:', error);
+                    // Change button text to indicate failure
+                    target.innerHTML = '❌ Description Change Failed';
+                }
+                break;
+
+            case 'change-name':
+                try {
+                    // Get new name
+                    const newName = document.getElementById(`name-${id}`).value;
+                    // Change playlist name
+                    await changePlaylistName(id, newName);
+                    // Change button text to indicate successful change
+                    target.innerHTML = '✅ Name Changed';
+                } catch (error) {
+                    console.error('Error changing playlist name:', error);
+                    // Change button text to indicate failure
+                    target.innerHTML = '❌ Name Change Failed';
+                }
+                break;
+        }
+
+        // Change button text back to normal after a delay
+        setTimeout(() => {
+            target.innerHTML = 'Done with Playlist Management';
+        }, 3000);
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Attach event listeners to all input fields
 const inputFields = document.querySelectorAll('input, select');

@@ -135,6 +135,55 @@
     </ul>
 </div>
 </div>
+
+
+  <!-- Add this section for generating BPM-based playlists -->
+  <div style="border-style: solid none solid none; margin-top: 20px;">
+      <h2>Generate BPM-based Playlists from an existing one</h2>
+
+      <div class="overlay-container">
+          <label for="bpm-playlist-name">Playlist Name:</label>
+          <input type="text" id="bpm-playlist-name" placeholder="Enter Playlist Name">
+          <select id="search-option">
+              <option value="name">Search by Playlist Name</option>
+              <option value="global">Global Search</option>
+              <option value="id">Use Playlist ID</option>
+              <option value="link">Use Playlist Link</option>
+          </select>
+          <button id="generate-bpm-playlist">Generate BPM Playlist</button>
+      </div>
+      <!-- Confirm Playlist -->
+      <div id="confirm-playlist-container"></div>
+    
+      <!-- Display BPM playlist generation logs -->
+      <div id="bpm-generation-log">
+          <h3>Generation Log:</h3>
+          <ul id="bpm-generation-log-list">
+              <!-- Display generation log here -->
+          </ul>
+      </div>
+  </div>
+
+<!-- Add this section after the existing HTML content -->
+<div style="border-style: solid none solid none;">
+    <h2>Manage Your Playlists</h2>
+  <div class="overlay-container">
+    <!-- Add a button to open playlist management -->
+    <button id="manage-playlists-button">Manage Playlists</button>
+
+    <!-- Playlist management section -->
+    <div id="playlist-management-section" style="display: none;">
+        <h3>Your Playlists:</h3>
+        <div id="playlist-container" class="playlist-grid">
+            <!-- Playlists will be displayed here -->
+        </div>
+        <!-- Done with playlist management button -->
+        <button id="done-managing-playlists">Done with Playlist Management</button>
+    </div>
+  </div>
+</div>
+
+  
   <!-- Section for Displaying Statistics -->
 <div style="border-style: solid none solid none;">
     <h2>Playlist Statistics</h2>
